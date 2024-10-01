@@ -2,6 +2,7 @@
 #include "doctest.h"
 
 #include "../src/TriDiag.h"
+#include "../src/Polygon.h"
 #include <cmath>
 
 TEST_CASE("Tri-diagonal matrix solve") {
@@ -37,4 +38,28 @@ TEST_CASE("Tri-diagonal matrix solve") {
     // it will never be exact due to rounding errors, but if it is within tolerance that is ok.
     double tolerance = 1.0e-14;
     CHECK(rms_error < tolerance);
+}
+
+TEST_CASE("Check ray-casting polygon") {
+    //example shape in klayout
+    std::vector<Point> poly_points = {
+        {32.61000, -25.91100},
+        {29.04400, -21.92500},
+        {32.40100, -17.39900},
+        {21.16100, -20.45600},
+        {16.81500, -17.63900},
+        {31.44100, -11.58400},
+        {45.13900, -19.58700}
+    };
+    Polygon polygon(poly_points);
+
+    Point test_point1 = {0, 0}; //out
+    Point test_point2 = {31, -18}; //out
+    Point test_point3 = {38, -20}; //in
+    Point test_point4 = {25.5, -15}; //in
+
+    CHECK(!polygon.point_inside_polygon(test_point1));
+    CHECK(!polygon.point_inside_polygon(test_point2));
+    CHECK(polygon.point_inside_polygon(test_point3));
+    CHECK(polygon.point_inside_polygon(test_point4));
 }
