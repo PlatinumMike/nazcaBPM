@@ -9,4 +9,6 @@ add_executable("${PROJECT_NAME}.x" src/main.cpp
         src/AuxiliaryFunctions.cpp
         src/AuxiliaryFunctions.h
         src/Writers.cpp
-        src/Writers.h)
+        src/Writers.h
+        src/TriDiag.cpp
+        src/TriDiag.h)
