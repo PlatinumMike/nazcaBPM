@@ -4,9 +4,15 @@
 
 #include "TriDiag.h"
 
+#include <cassert>
+
 std::vector<double> TriDiag::solve_thomas(const std::vector<double> &lower_diag, std::vector<double> &diag,
                                           const std::vector<double> &upper_diag, std::vector<double> &rhs) {
     const size_t size = diag.size();
+    assert(("lower diagonal should be one element shorter than the diagonal", lower_diag.size() == size - 1));
+    assert(("upper diagonal should be one element shorter than the diagonal", upper_diag.size() == size - 1));
+    assert(("right hand side should be the same length as the diagonal", rhs.size() == size));
+
     std::vector<double> solution(size);
 
     //forward sweep

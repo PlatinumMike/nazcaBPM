@@ -15,7 +15,7 @@ public:
      * The diagonal, the right-hand size, and solution are size N,
      * the lower and upper diagonal are size N-1.
     */
-    // warning, this will modify the input vectors.
+    // warning, this will modify the input vectors diag and rhs.
     // you can avoid that but that will take more RAM.
     //TODO: use templating to make this work for complex data too
     static std::vector<double> solve_thomas(const std::vector<double> &lower_diag, std::vector<double> &diag,
