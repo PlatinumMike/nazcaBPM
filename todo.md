@@ -7,3 +7,5 @@ Todo items:
 6) Compute mode fields inside the BPM itself.
 7) Add unit tests.
 8) Use Boost.MultiArray for multi-D arrays. This simplifies the array indexing, so it's less error-prone.
+9) Add Python interface, swig, pybind11?
+10) Add exception handling.
