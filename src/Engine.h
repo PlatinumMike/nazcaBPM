@@ -9,6 +9,8 @@
 #include <numbers>
 #include <vector>
 
+#include "Parameters.h"
+
 /**
 * Note, the coordinate system is the same as in Fig. 2.1 of the book "Beam propagation method for design of optical waveguide devices", G. Pedrola, 2016.
 * So z is the propagation direction, x is normal out of the PIC surface, and y lies tangent to the PIC. This forms a right-handed coordinate system.
@@ -16,7 +18,7 @@
 */
 class Engine {
 public:
-    Engine();
+    explicit Engine(const std::string &fileName);
 
     /**
      * Run the actual simulation
@@ -58,24 +60,21 @@ public:
     std::vector<double> get_intensity(const std::vector<std::complex<double> >& field);
 
 private:
-    //TODO: make these inputs that are read from a file
-    double background_index = 1.5; //background refractive index
-    double core_index = 2.0;
-    double wl = 1.55; //vacuum wavelength (um)
-    int resolution_x = 10; //number of gridpoints per unit length in x direction
-    int resolution_y = 10; //number of gridpoints per unit length in y direction
-    int numx = 1; //number of gridpoints
-    int numy = 1;
-    int numz = 1;
-    double domain_len_x = 4; //length of the domain in x direction
-    double domain_len_y = 6.0; //length of the domain in y direction
-    double domain_len_z = 10.0; //length of the domain in z direction
-    double reference_index = 1.6;
-    double k0 = 2 * std::numbers::pi / wl; //vacuum wavenumber
-    double beta_ref = k0 * reference_index;
 
-    double pml_strength = 5.0;
-    double pml_thickness = 1.0; //thickness of the PML (um)
+    Parameters _inputs;
+    // TODO these values do not need to be accessible globally in Engine, pass them along.
+    int numx;
+    int numy;
+    double domain_len_x;
+    double domain_len_y;
+    double beta_ref;
+    double k0;
+    double core_index;
+    double background_index;
+    double reference_index;
+    double pml_thickness;
+    double pml_strength;
+
 
     // helper function to get the conductivity
     double get_conductivity_base(double x, double xmin, double xmax) const;

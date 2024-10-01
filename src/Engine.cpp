@@ -5,6 +5,7 @@
 #include "Engine.h"
 #include "AuxiliaryFunctions.h"
 #include "Writers.h"
+#include "IO/Readers.h"
 
 #include <cmath>
 #include <complex>
@@ -15,35 +16,48 @@
 #include <chrono>
 
 
-Engine::Engine() {
+Engine::Engine(const std::string &fileName) {
     std::cout << "Launching new engine now" << std::endl;
+    //initialize
+    _inputs = Readers::readJSON(fileName);
 }
 
 void Engine::run() {
-    numx = static_cast<int>(domain_len_x * resolution_x);
-    numy = static_cast<int>(domain_len_y * resolution_y);
-    // int num_slice = numx * numy;
-    double xgrid[numx];
-    double ygrid[numy];
+    const Parameters inputs = _inputs; //make a const copy, to avoid accidental modification of input variables.
+
+    numx = inputs.numx;
+    numy = inputs.numy;
+    domain_len_x = inputs.domain_len_x;
+    domain_len_y = inputs.domain_len_y;
+    beta_ref = inputs.beta_ref;
+    k0 = inputs.k0;
+    core_index = inputs.core_index;
+    background_index = inputs.background_index;
+    reference_index = inputs.reference_index;
+    pml_thickness = inputs.pml_thickness;
+    pml_strength = inputs.pml_strength;
+
+    double xgrid[inputs.numx];
+    double ygrid[inputs.numy];
     //TODO: replace this with a function that returns a vector, that is a bit safer than a raw array.
-    AuxiliaryFunctions::linspace(xgrid, -0.5 * domain_len_x, 0.5 * domain_len_x, numx);
-    AuxiliaryFunctions::linspace(ygrid, -0.5 * domain_len_y, 0.5 * domain_len_y, numy);
+    AuxiliaryFunctions::linspace(xgrid, -0.5 * inputs.domain_len_x, 0.5 * inputs.domain_len_x, inputs.numx);
+    AuxiliaryFunctions::linspace(ygrid, -0.5 * inputs.domain_len_y, 0.5 * inputs.domain_len_y, inputs.numy);
     const double dx = xgrid[1] - xgrid[0];
     const double dy = ygrid[1] - ygrid[0];
     double constexpr safety_factor = 0.5; // best to use a slightly smaller dz step to be sure it is stable.
-    numz = static_cast<int>(domain_len_z / (safety_factor * get_min_dz(dx, dy)));
+    int numz = static_cast<int>(inputs.domain_len_z / (safety_factor * get_min_dz(dx, dy)));
     double zgrid[numz];
-    AuxiliaryFunctions::linspace(zgrid, 0.0, domain_len_y, numz);
+    AuxiliaryFunctions::linspace(zgrid, 0.0, inputs.domain_len_y, numz);
     const double dz = zgrid[1] - zgrid[0];
 
-    std::cout << "Lx = " << domain_len_x << ", Ly = " << domain_len_y << ", Lz = " << domain_len_z << std::endl;
-    std::cout << "Nx = " << numx << ", Ny = " << numy << ", Nz = " << numz << std::endl;
+    std::cout << "Lx = " << inputs.domain_len_x << ", Ly = " << inputs.domain_len_y << ", Lz = " << inputs.domain_len_z << std::endl;
+    std::cout << "Nx = " << inputs.numx << ", Ny = " << inputs.numy << ", Nz = " << numz << std::endl;
     std::cout << "dx = " << dx << ", dy = " << dy << ", dz = " << dz << std::endl;
 
     //define field in current slice to be "field". Since it is a scalar BPM there is no polarization.
     std::vector<std::complex<double> > field = get_initial_profile(xgrid, ygrid);
 
-    Writers::write_to_csv(field, "initial_field.csv", numx, numy);
+    Writers::write_to_csv(field, "initial_field.csv", inputs.numx, inputs.numy);
 
     std::vector<std::complex<double> > field_slice_yz;
     record_slice(field, field_slice_yz);
@@ -86,8 +100,8 @@ void Engine::run() {
     std::cout << "Elapsed time = " << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() << " (s)" <<
             std::endl;
 
-    Writers::write_to_csv(field, "final_field.csv", numx, numy);
-    Writers::write_to_csv(field_slice_yz, "field_slice.csv", numz, numy);
+    Writers::write_to_csv(field, "final_field.csv", inputs.numx, inputs.numy);
+    Writers::write_to_csv(field_slice_yz, "field_slice.csv", numz, inputs.numy);
 }
 
 

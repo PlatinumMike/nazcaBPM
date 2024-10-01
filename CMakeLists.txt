@@ -11,4 +11,7 @@ add_executable("${PROJECT_NAME}.x" src/main.cpp
         src/Writers.cpp
         src/Writers.h
         src/TriDiag.cpp
-        src/TriDiag.h)
+        src/TriDiag.h
+        src/IO/Readers.cpp
+        src/IO/Readers.h
+        src/Parameters.h)
