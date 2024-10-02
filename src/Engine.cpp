@@ -13,6 +13,7 @@
 #include <ostream>
 #include <vector>
 #include <algorithm>
+#include <cassert>
 #include <chrono>
 
 
@@ -35,7 +36,7 @@ void Engine::run() {
     reference_index = inputs.reference_index;
     pml_thickness = inputs.pml_thickness;
     pml_strength = inputs.pml_strength;
-    geometry = new Geometry(inputs.shapes,inputs.background_index);
+    geometry = new Geometry(inputs.shapes, inputs.background_index);
 
     double xgrid[inputs.numx];
     double ygrid[inputs.numy];
@@ -45,7 +46,7 @@ void Engine::run() {
     const double dx = xgrid[1] - xgrid[0];
     const double dy = ygrid[1] - ygrid[0];
     double constexpr safety_factor = 0.5; // best to use a slightly smaller dz step to be sure it is stable.
-    int numz = static_cast<int>(inputs.domain_len_z / (safety_factor * get_min_dz(dx, dy)));
+    numz = static_cast<int>(inputs.domain_len_z / (safety_factor * get_min_dz(dx, dy)));
     double zgrid[numz];
     AuxiliaryFunctions::linspace(zgrid, 0.0, inputs.domain_len_y, numz);
     const double dz = zgrid[1] - zgrid[0];
@@ -54,6 +55,10 @@ void Engine::run() {
             << std::endl;
     std::cout << "Nx = " << inputs.numx << ", Ny = " << inputs.numy << ", Nz = " << numz << std::endl;
     std::cout << "dx = " << dx << ", dy = " << dy << ", dz = " << dz << std::endl;
+
+    dump_index_slice("index_start.csv", 'z', 0.0, xgrid, ygrid, zgrid);
+    dump_index_slice("index_end.csv", 'z', zgrid[numz - 1], xgrid, ygrid, zgrid);
+    dump_index_slice("index_cross.csv", 'x', 0.0, xgrid, ygrid, zgrid);
 
     //define field in current slice to be "field". Since it is a scalar BPM there is no polarization.
     std::vector<std::complex<double> > field = get_initial_profile(xgrid, ygrid);
@@ -64,11 +69,11 @@ void Engine::run() {
     record_slice(field, field_slice_yz);
 
 
-    int index_1percent = numz / 100;
-    int index_10percent = numz / 10;
-    int index_50percent = numz / 2;
+    const int index_1percent = numz / 100;
+    const int index_10percent = numz / 10;
+    const int index_50percent = numz / 2;
 
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     for (int z_step = 1; z_step < numz; z_step++) {
         double current_z = zgrid[z_step - 1];
         field = do_step_rk4(field, xgrid, ygrid, current_z, dz);
@@ -97,7 +102,7 @@ void Engine::run() {
         }
     }
     std::cout << "Engine run completed" << std::endl;
-    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    const std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "Elapsed time = " << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() << " (s)" <<
             std::endl;
 
@@ -160,8 +165,8 @@ std::vector<std::complex<double> > Engine::get_derivative(const std::vector<std:
     std::complex<double> qfactor_x_mid, qfactor_x_bottom, qfactor_x_top, qfactor_y_mid, qfactor_y_left, qfactor_y_right,
             field_mid, field_left, field_right, field_top, field_bottom;
     std::complex<double> value = {0.0, 0.0};
-    double dx = xgrid[1] - xgrid[0];
-    double dy = ygrid[1] - ygrid[0];
+    const double dx = xgrid[1] - xgrid[0];
+    const double dy = ygrid[1] - ygrid[0];
     double index;
     for (int idx = 0; idx < numx; idx++) {
         for (int idy = 0; idy < numy; idy++) {
@@ -209,7 +214,7 @@ std::vector<std::complex<double> > Engine::get_derivative(const std::vector<std:
 std::vector<std::complex<double> > Engine::do_step_euler(const std::vector<std::complex<double> > &field, double *xgrid,
                                                          double *ygrid, double z, double dz) const {
     std::vector<std::complex<double> > new_field;
-    std::vector<std::complex<double> > k1 = get_derivative(field, xgrid, ygrid, z);
+    const std::vector<std::complex<double> > k1 = get_derivative(field, xgrid, ygrid, z);
     for (size_t index = 0; index < field.size(); index++) {
         new_field.push_back(field[index] + k1[index] * dz);
     }
@@ -223,19 +228,19 @@ std::vector<std::complex<double> > Engine::do_step_rk4(const std::vector<std::co
     // Then compute k1, and add it to the new field. Also use it for k2, then deallocate k1. repeat for k2, k3, k4.
     std::vector<std::complex<double> > new_field;
     std::vector<std::complex<double> > temp_field(field.size());
-    std::vector<std::complex<double> > k1 = get_derivative(field, xgrid, ygrid, z);
+    const std::vector<std::complex<double> > k1 = get_derivative(field, xgrid, ygrid, z);
     for (size_t index = 0; index < field.size(); index++) {
         temp_field[index] = field[index] + 0.5 * k1[index] * dz;
     }
-    std::vector<std::complex<double> > k2 = get_derivative(temp_field, xgrid, ygrid, z + 0.5 * dz);
+    const std::vector<std::complex<double> > k2 = get_derivative(temp_field, xgrid, ygrid, z + 0.5 * dz);
     for (size_t index = 0; index < field.size(); index++) {
         temp_field[index] = field[index] + 0.5 * k2[index] * dz;
     }
-    std::vector<std::complex<double> > k3 = get_derivative(temp_field, xgrid, ygrid, z + 0.5 * dz);
+    const std::vector<std::complex<double> > k3 = get_derivative(temp_field, xgrid, ygrid, z + 0.5 * dz);
     for (size_t index = 0; index < field.size(); index++) {
         temp_field[index] = field[index] + k3[index] * dz;
     }
-    std::vector<std::complex<double> > k4 = get_derivative(temp_field, xgrid, ygrid, z + dz);
+    const std::vector<std::complex<double> > k4 = get_derivative(temp_field, xgrid, ygrid, z + dz);
 
 
     for (size_t index = 0; index < field.size(); index++) {
@@ -249,10 +254,10 @@ std::vector<std::complex<double> > Engine::do_step_rk4(const std::vector<std::co
 double Engine::get_conductivity_base(double x, double xmin, double xmax) const {
     //second order polynomial PML strength
     if (x < xmin + pml_thickness) {
-        double base_value = ((xmin + pml_thickness) - x) / pml_thickness;
+        const double base_value = ((xmin + pml_thickness) - x) / pml_thickness;
         return pml_strength * base_value * base_value;
     } else if (x > xmax - pml_thickness) {
-        double base_value = (x - (xmax - pml_thickness)) / pml_thickness;
+        const double base_value = (x - (xmax - pml_thickness)) / pml_thickness;
         return pml_strength * base_value * base_value;
     } else {
         return 0.0;
@@ -264,7 +269,7 @@ int Engine::get_neighbour_index(int i, int j, int ny, int direction) const {
     // direction = 1 means to the top, so increment the x coordinate.
     // direction = 2 means to the left, so decrement the y coordinate.
     // direction = 3 means to the bottom, so decrement the x coordinate.
-    int base_index = i * ny + j;
+    const int base_index = i * ny + j;
     if (direction == 0) {
         return base_index + 1;
     } else if (direction == 1) {
@@ -277,8 +282,8 @@ int Engine::get_neighbour_index(int i, int j, int ny, int direction) const {
 }
 
 void Engine::record_slice(const std::vector<std::complex<double> > &buffer,
-                          std::vector<std::complex<double> > &storage) {
-    int index_xmid = numx / 2; //yz slice at x=0 approximately
+                          std::vector<std::complex<double> > &storage) const {
+    const int index_xmid = numx / 2; //yz slice at x=0 approximately
     for (int idy = 0; idy < numy; idy++) {
         storage.push_back(buffer[index_xmid * numy + idy]);
     }
@@ -286,6 +291,36 @@ void Engine::record_slice(const std::vector<std::complex<double> > &buffer,
     // for (auto value : buffer) {
     //     storage.push_back(value);
     // }
+}
+
+int Engine::dump_index_slice(const std::string &filename, const char direction,
+                             const double slice_position, double *xgrid, double *ygrid, double *zgrid) const {
+    std::vector<double> index;
+    assert(("Slice direction not recognized, use x or y or z",direction=='x' || direction=='y'|| direction=='z'));
+    if (direction == 'x') {
+        for (int idy = 0; idy < numy; idy++) {
+            for (int idz = 0; idz < numz; idz++) {
+                index.push_back(get_refractive_index(slice_position, ygrid[idy], zgrid[idz]));
+            }
+        }
+        Writers::write_to_csv(index, filename, numy, numz);
+    } else if (direction == 'y') {
+        for (int idx = 0; idx < numx; idx++) {
+            for (int idz = 0; idz < numz; idz++) {
+                index.push_back(get_refractive_index(xgrid[idx], slice_position, zgrid[idz]));
+            }
+        }
+        Writers::write_to_csv(index, filename, numx, numz);
+    } else {
+        for (int idx = 0; idx < numx; idx++) {
+            for (int idy = 0; idy < numy; idy++) {
+                index.push_back(get_refractive_index(xgrid[idx], ygrid[idy], slice_position));
+            }
+        }
+        Writers::write_to_csv(index, filename, numx, numy);
+    }
+
+    return 0;
 }
 
 double Engine::get_conductivityx(double x) const {
@@ -315,7 +350,7 @@ std::vector<double> Engine::get_intensity(const std::vector<std::complex<double>
         imag = value.imag();
         intensity.push_back(real * real + imag * imag);
     }
-    double max = *std::max_element(intensity.begin(), intensity.end());
+    const double max = *std::ranges::max_element(intensity);
     for (double &intens: intensity) {
         intens /= max;
     }

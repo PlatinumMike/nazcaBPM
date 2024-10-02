@@ -6,7 +6,6 @@
 #define ENGINE_H
 
 #include <complex>
-#include <numbers>
 #include <vector>
 
 #include "Parameters.h"
@@ -27,7 +26,7 @@ public:
 
     double get_refractive_index(double x, double y, double z) const;
 
-    double get_min_dz(double dx,  double dy) const;
+    double get_min_dz(double dx, double dy) const;
 
     std::vector<std::complex<double> > get_initial_profile(const double *xgrid, const double *ygrid) const;
 
@@ -57,14 +56,14 @@ public:
 
     std::complex<double> get_qfactory(double x, double y, double z) const;
 
-    std::vector<double> get_intensity(const std::vector<std::complex<double> >& field);
+    std::vector<double> get_intensity(const std::vector<std::complex<double> > &field);
 
 private:
-
     Parameters _inputs;
     // TODO these values do not need to be accessible globally in Engine, pass them along.
     int numx;
     int numy;
+    int numz;
     double domain_len_x;
     double domain_len_y;
     double beta_ref;
@@ -82,8 +81,11 @@ private:
     // array indexing helper
     int get_neighbour_index(int i, int j, int ny, int direction = 0) const;
 
-    void record_slice(const std::vector<std::complex<double> > &buffer,std::vector<std::complex<double> > &storage);
+    void record_slice(const std::vector<std::complex<double> > &buffer,
+                      std::vector<std::complex<double> > &storage) const;
 
+    int dump_index_slice(const std::string &filename, char direction, double slice_position, double *xgrid,
+                         double *ygrid, double *zgrid) const;
 };
 
 
