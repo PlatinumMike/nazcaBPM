@@ -19,3 +19,9 @@ add_executable("${PROJECT_NAME}.x" src/main.cpp
         src/Geometry.h
         src/Polygon.cpp
         src/Polygon.h)
+
+#set(ENABLE_TEST 1)
+
+if (ENABLE_TEST)
+    add_executable(testSuite.x test/test.cpp src/TriDiag.cpp src/TriDiag.h src/Polygon.cpp src/Polygon.h)
+endif ()

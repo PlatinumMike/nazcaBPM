@@ -47,10 +47,7 @@ This is important if there is an overlap. If the list is exhausted the (x,y) poi
 
 # Testing
 
-The software ships with some basic test cases that you can run.
-First step, download the [doctest](https://github.com/doctest/doctest) header ``doctest.h`` and place it inside the test directory. Secondly, as before create a build directory, go inside of it, run ``cmake``, then ``make``.
-Lastly, the tests can be run with ``./testSuite.x``.
-Tested so far on Ubuntu 24.04 with gcc 13.2.0 and boost 1.83.0.
+The software ships with some basic test cases that you can run. These are opt-in, to enable them first download the [doctest](https://github.com/doctest/doctest) header ``doctest.h`` and place it inside the test directory. Secondly, uncomment the `set(ENABLE_TEST 1)` in `CMakeLists.txt`, go to the build directory and run `cmake` followed by `make`. Lastly, the tests can be run with ``./testSuite.x``. Tested so far on Ubuntu 24.04 with gcc 13.2.0 and boost 1.83.0.
 
 # Misc
 
