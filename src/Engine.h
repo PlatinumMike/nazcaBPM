@@ -69,11 +69,11 @@ private:
     double domain_len_y;
     double beta_ref;
     double k0;
-    double core_index;
-    double background_index;
+    double max_index;
     double reference_index;
     double pml_thickness;
     double pml_strength;
+    Geometry *geometry;
 
 
     // helper function to get the conductivity

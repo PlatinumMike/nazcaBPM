@@ -20,6 +20,9 @@ struct Point {
 
 class Polygon {
 public:
+    // Note, for a polygon with N vertices, you have to pass in a vector of size N.
+    // in some conventions people add the starting point again at the end, to "close" the polygon.
+    // Do not do this! This method expects unique points only!
     explicit Polygon(std::vector<Point> points_input);
 
     // evaluate if a point is inside the polygon.

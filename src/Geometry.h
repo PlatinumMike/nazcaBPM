@@ -9,7 +9,8 @@
 
 
 // shapes in nazca are described by their polygon, then extruded vertically. Also we will assume they have a uniform refractive index.
-// You could
+// you could embed the extra z and index information into the polygon, but this is kept apart on purpose. This way the nazca information is kept separate.
+// the ray casting only needs to be done for the x,y coordinates, it does not need any other information.
 struct Shape {
     Polygon poly;
     double zmin = 0;
@@ -26,7 +27,7 @@ public:
     Geometry(std::vector<Shape> shapes, double background_index);
 
     //loop over all shapes, find if the point is inside, and return the index.
-    double get_index(double x, double y, double z);
+    double get_index(double x, double y, double z) const;
 
 private:
     // todo: keep track of a temporary sub-list for each z slice for only the shapes that are present in that slice.
@@ -34,7 +35,8 @@ private:
     std::vector<Shape> m_shapes;
     double m_background_index;
 
-    bool point_in_shape(double x, double y, double z, const Shape& shape);
+    //this uses nazca coordinates
+    bool point_in_shape(double x, double y, double z, const Shape &shape) const;
 };
 
 

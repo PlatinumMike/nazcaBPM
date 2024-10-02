@@ -21,7 +21,7 @@ def get_field(filename, Nx, Ny):
 
 initial_field = get_field("../build/" + "initial_field.csv", Nx=40, Ny=60)
 final_field = get_field("../build/" + "final_field.csv", Nx=40, Ny=60)
-field_slice = get_field("../build/" + "field_slice.csv", Nx=1182, Ny=60)
+field_slice = get_field("../build/" + "field_slice.csv", Nx=4728, Ny=60)
 
 plt.figure()
 plt.contourf(initial_field.real, 20)

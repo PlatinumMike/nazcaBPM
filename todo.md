@@ -9,3 +9,6 @@ Todo items:
 8) Use Boost.MultiArray for multi-D arrays. This simplifies the array indexing, so it's less error-prone.
 9) Add Python interface, swig, pybind11? Or dockerize?
 10) Add exception handling.
+11) Implement a semi-vectorial version.
+12) Implement conformal mapping, to handle bends? If you cut up the bend into a series of circular arc segments you can model any kind of spline, including cobras and euler bends.
+13) At some point change coordinates of the BPM so that they are the same as those in nazca/klayout. This is more intuitive to the user.

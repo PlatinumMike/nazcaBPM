@@ -5,10 +5,12 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
+#include "Geometry.h"
+
 struct Parameters {
 
     double background_index; //background refractive index
-    double core_index; //index of the waveguide core
+    double max_index; //maximum refractive index in the entire domain
     double wl; //vacuum wavelength (um)
     int resolution_x; //number of gridpoints per unit length in x direction
     int resolution_y; //number of gridpoints per unit length in y direction
@@ -25,6 +27,8 @@ struct Parameters {
 
     double pml_strength; //max conductivity inside the PML
     double pml_thickness; //thickness of the PML (um)
+
+    std::vector<Shape> shapes;
 
     //todo: add method to print all of the loaded values inside of the code, so a user can confirm they are loaded correctly.
 };

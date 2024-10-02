@@ -31,11 +31,11 @@ void Engine::run() {
     domain_len_y = inputs.domain_len_y;
     beta_ref = inputs.beta_ref;
     k0 = inputs.k0;
-    core_index = inputs.core_index;
-    background_index = inputs.background_index;
+    max_index = inputs.max_index;
     reference_index = inputs.reference_index;
     pml_thickness = inputs.pml_thickness;
     pml_strength = inputs.pml_strength;
+    geometry = new Geometry(inputs.shapes,inputs.background_index);
 
     double xgrid[inputs.numx];
     double ygrid[inputs.numy];
@@ -50,7 +50,8 @@ void Engine::run() {
     AuxiliaryFunctions::linspace(zgrid, 0.0, inputs.domain_len_y, numz);
     const double dz = zgrid[1] - zgrid[0];
 
-    std::cout << "Lx = " << inputs.domain_len_x << ", Ly = " << inputs.domain_len_y << ", Lz = " << inputs.domain_len_z << std::endl;
+    std::cout << "Lx = " << inputs.domain_len_x << ", Ly = " << inputs.domain_len_y << ", Lz = " << inputs.domain_len_z
+            << std::endl;
     std::cout << "Nx = " << inputs.numx << ", Ny = " << inputs.numy << ", Nz = " << numz << std::endl;
     std::cout << "dx = " << dx << ", dy = " << dy << ", dz = " << dz << std::endl;
 
@@ -105,22 +106,14 @@ void Engine::run() {
 }
 
 
-double Engine::get_refractive_index(const double x, const double y, double z) const {
-    //TODO: replace this with proper list of polygons to search in. Nazca export.
-    double wg_width = 1.000;
-    double wg_height = 0.350;
-    double x0 = 0.0;
-    double y0 = 0.0;
-    if (x < x0 + 0.5 * wg_height && x > x0 - 0.5 * wg_height && y < y0 + 0.5 * wg_width && y > y0 - 0.5 * wg_width) {
-        return core_index;
-    } else {
-        return background_index;
-    }
+double Engine::get_refractive_index(const double x_bpm, const double y_bpm, double z_bpm) const {
+    //convert to nazca coordinates
+    return geometry->get_index(z_bpm, -y_bpm, x_bpm);
 }
 
 double Engine::get_min_dz(double dx, double dy) const {
     // from this paper "Analysis of 2-Invariant and 2-Variant Semiconductor Rib Waveguides by Explicit Finite Difference BeamPropagation Method with Nonuniform MeshConfiguration", 1991.
-    double max_index = core_index; // max index in the whole domain.
+    // only applies to explicit field updates, not the CN scheme.
     double denom = 4.0 / (dx * dx) + 4.0 / (dy * dy) + k0 * k0 * (
                        max_index * max_index - reference_index * reference_index);
     double dz_min = 2.0 * beta_ref / denom;
