@@ -5,18 +5,17 @@
 #ifndef AUXILIARYFUNCTIONS_H
 #define AUXILIARYFUNCTIONS_H
 
-
+#include <vector>
 
 class AuxiliaryFunctions {
 public:
     /**
-     * Fill array with linearly spaced values
-     * @param array target array
+     * Generate vector with linearly spaced values
      * @param start starting value
      * @param stop final value
      * @param count number of entries to fill
      */
-    static void linspace(double *array, double start, double stop, int count);
+    static std::vector<double> linspace(double start, double stop, int count);
 
 };
 

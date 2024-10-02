@@ -28,23 +28,27 @@ public:
 
     double get_min_dz(double dx, double dy) const;
 
-    std::vector<std::complex<double> > get_initial_profile(const double *xgrid, const double *ygrid) const;
+    std::vector<std::complex<double> > get_initial_profile(const std::vector<double> &xgrid,
+                                                           const std::vector<double> &ygrid) const;
 
     //derivative of the field vector w.r.t. z, so du/dz.
-    std::vector<std::complex<double> > get_derivative(const std::vector<std::complex<double> > &field, double *xgrid,
-                                                      double *ygrid,
+    std::vector<std::complex<double> > get_derivative(const std::vector<std::complex<double> > &field,
+                                                      const std::vector<double> &xgrid,
+                                                      const std::vector<double> &ygrid,
                                                       double z) const;
 
     // Update field with one step of the forward Euler scheme
-    std::vector<std::complex<double> > do_step_euler(const std::vector<std::complex<double> > &field, double *xgrid,
-                                                     double *ygrid, double z, double dz) const;
+    std::vector<std::complex<double> > do_step_euler(const std::vector<std::complex<double> > &field,
+                                                     const std::vector<double> &xgrid,
+                                                     const std::vector<double> &ygrid, double z, double dz) const;
 
     // Update field with one step of the explicit fourth order Runge-Kutta scheme.
     // Using Runge Kutta 4 for explicit time stepping. This has a limited dz step, proportional to dx^2.
     // Which may make it slower than the Crank-Nickelson scheme, it needs to do many more steps.
     // but each individual step is faster, also it has a smaller error per step than CN. So not clear which is faster, tbd.
-    std::vector<std::complex<double> > do_step_rk4(const std::vector<std::complex<double> > &field, double *xgrid,
-                                                   double *ygrid,
+    std::vector<std::complex<double> > do_step_rk4(const std::vector<std::complex<double> > &field,
+                                                   const std::vector<double> &xgrid,
+                                                   const std::vector<double> &ygrid,
                                                    double z, double dz) const;
 
     //get conductivity for the pml, in units of omega*eps0
@@ -84,8 +88,9 @@ private:
     void record_slice(const std::vector<std::complex<double> > &buffer,
                       std::vector<std::complex<double> > &storage) const;
 
-    int dump_index_slice(const std::string &filename, char direction, double slice_position, double *xgrid,
-                         double *ygrid, double *zgrid) const;
+    int dump_index_slice(const std::string &filename, char direction, double slice_position,
+                         const std::vector<double> &xgrid,
+                         const std::vector<double> &ygrid, const std::vector<double> &zgrid) const;
 };
 
 
