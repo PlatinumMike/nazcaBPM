@@ -3,7 +3,10 @@
 
 #include "../src/TriDiag.h"
 #include "../src/Polygon.h"
+#include "../src/AuxiliaryFunctions.h"
+#include "../src/Geometry.h"
 #include <cmath>
+
 
 TEST_CASE("Tri-diagonal matrix solve") {
     //use a simple 4x4 matrix
@@ -62,4 +65,39 @@ TEST_CASE("Check ray-casting polygon") {
     CHECK(!polygon.point_inside_polygon(test_point2));
     CHECK(polygon.point_inside_polygon(test_point3));
     CHECK(polygon.point_inside_polygon(test_point4));
+}
+
+TEST_CASE("Linspace test") {
+    std::vector<double> my_range = AuxiliaryFunctions::linspace(-13.5, 26.0, 19);
+    CHECK(my_range.front() == -13.5);
+    CHECK(my_range[9] == 6.25);
+    CHECK(my_range.back() == 26.0);
+}
+
+TEST_CASE("Check geometry class") {
+    // we have a few overlapping material blocks here.
+    constexpr double back_index = 1.4;
+    constexpr double index1 = 2.0;
+    constexpr double index2 = 1.7;
+    constexpr double index3 = 2.4;
+    const Polygon polygon1({Point(-1.0, 0.0), Point(0.3, 0.0), Point(0.3, 1.0), Point(0.0, 1.0)});
+    const Polygon polygon2({Point(0.3, 0.0), Point(0.75, 0.0), Point(0.75, 0.65), Point(0.3, 0.65)});
+    const Polygon polygon3({Point(-0.2, -0.4), Point(0.5, -0.4), Point(0.5, 0.4), Point(-0.2, 0.4)});
+
+    const Shape shape1(polygon1, -0.5, 0.5, index1);
+    const Shape shape2(polygon2, -0.4, 1.1, index2);
+    const Shape shape3(polygon3, -1.0, 1.0, index3);
+    const std::vector shapes = {shape1, shape2, shape3};
+    Geometry geometry(shapes, back_index);
+
+    CHECK(geometry.get_index(-2.0,0,0)==back_index); //outside of all shapes
+    CHECK(geometry.get_index(0,0,0)==index3); //should be in the third shape
+    CHECK(geometry.get_index(-0.5,0.4,0)==index1);
+    CHECK(geometry.get_index(0.6,0.2,0)==index2);
+
+    //overlapping here, but shape3 takes precedence because it was added later
+    CHECK(geometry.get_index(0,0.16,0)==index3);
+    CHECK(geometry.get_index(0.37,0.2,0)==index3);
+    CHECK(geometry.get_index(0.37,0.2,1.4)==back_index);
+    CHECK(geometry.get_index(0.37,0.2,1.05)==index2);
 }

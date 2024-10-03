@@ -23,5 +23,5 @@ add_executable("${PROJECT_NAME}.x" src/main.cpp
 #set(ENABLE_TEST 1)
 
 if (ENABLE_TEST)
-    add_executable(testSuite.x test/test.cpp src/TriDiag.cpp src/TriDiag.h src/Polygon.cpp src/Polygon.h)
+    add_executable(testSuite.x test/test.cpp src/TriDiag.cpp src/TriDiag.h src/Polygon.cpp src/Polygon.h src/AuxiliaryFunctions.cpp src/AuxiliaryFunctions.h src/Geometry.cpp src/Geometry.h)
 endif ()

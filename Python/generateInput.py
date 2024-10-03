@@ -15,21 +15,22 @@ height = 0.350
 taper_length = 10
 zmin = -height / 2
 zmax = height / 2
-# this polygon could be exported by nazca for instance
+# this polygon could be exported by nazca for instance.
+# Adding extra bit of straight waveguide, otherwise the polygon ends right on the domain border, which means there is a jump in index at the start.
 taper = {
     "cell_name": "taper",
     "zmin": zmin,
     "zmax": zmax,
     "refractive_index": 2.0,
     "poly": [
-        (0, -width1 / 2),
+        (-0.1, -width1 / 2),
         (10, -width1 / 2),
         (10 + taper_length, -width2 / 2),
         (20 + taper_length, -width2 / 2),
         (20 + taper_length, width2 / 2),
         (10 + taper_length, width2 / 2),
         (10, width1 / 2),
-        (0, width1 / 2),
+        (0.1, width1 / 2),
     ],
 }
 # adding a straight waveguide
@@ -40,8 +41,8 @@ strt = {
     "refractive_index": 2.0,
     "poly": [
         (20 + taper_length, -width2 / 2),
-        (30 + taper_length, -width2 / 2),
-        (30 + taper_length, width2 / 2),
+        (30.1 + taper_length, -width2 / 2),
+        (30.1 + taper_length, width2 / 2),
         (20 + taper_length, width2 / 2),
     ],
 }
