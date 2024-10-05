@@ -28,7 +28,7 @@ public:
 
     double get_refractive_index(double x, double y, double z) const;
 
-    double get_min_dz(double dx, double dy) const;
+    double get_min_dz(double dx, double dy, double max_index, double k0, double reference_index) const;
 
     multi_array<std::complex<double>, 2> get_initial_profile(const std::vector<double> &xgrid,
                                                              const std::vector<double> &ygrid) const;
@@ -70,11 +70,14 @@ private:
     int numx;
     int numy;
     int numz;
-    double domain_len_x;
-    double domain_len_y;
+    double x_min;
+    double x_max;
+    double y_min;
+    double y_max;
+    double z_min;
+    double z_max;
     double beta_ref;
     double k0;
-    double max_index;
     double reference_index;
     double pml_thickness;
     double pml_strength;

@@ -34,23 +34,28 @@ void Engine::run() {
 
     numx = inputs.numx;
     numy = inputs.numy;
-    domain_len_x = inputs.domain_len_x;
-    domain_len_y = inputs.domain_len_y;
+    x_min = -0.5 * inputs.domain_len_x;
+    x_max = 0.5 * inputs.domain_len_x;
+    y_min = -0.5 * inputs.domain_len_y;
+    y_max = 0.5 * inputs.domain_len_y;
+    z_min = 0.0;
+    z_max = inputs.domain_len_z;
+
     beta_ref = inputs.beta_ref;
     k0 = inputs.k0;
-    max_index = inputs.max_index;
     reference_index = inputs.reference_index;
     pml_thickness = inputs.pml_thickness;
     pml_strength = inputs.pml_strength;
     geometry = new Geometry(inputs.shapes, inputs.background_index);
 
-    auto xgrid = AuxiliaryFunctions::linspace(-0.5 * inputs.domain_len_x, 0.5 * inputs.domain_len_x, inputs.numx);
-    auto ygrid = AuxiliaryFunctions::linspace(-0.5 * inputs.domain_len_y, 0.5 * inputs.domain_len_y, inputs.numy);
+    auto xgrid = AuxiliaryFunctions::linspace(x_min, x_max, inputs.numx);
+    auto ygrid = AuxiliaryFunctions::linspace(y_min, y_max, inputs.numy);
     const double dx = xgrid[1] - xgrid[0];
     const double dy = ygrid[1] - ygrid[0];
     double constexpr safety_factor = 0.5; // best to use a slightly smaller dz step to be sure it is stable.
-    numz = static_cast<int>(inputs.domain_len_z / (safety_factor * get_min_dz(dx, dy)));
-    auto zgrid = AuxiliaryFunctions::linspace(0.0, inputs.domain_len_y, numz);
+    numz = static_cast<int>(inputs.domain_len_z / (safety_factor * get_min_dz(
+                                                       dx, dy, inputs.max_index, inputs.k0, inputs.reference_index)));
+    auto zgrid = AuxiliaryFunctions::linspace(z_min, z_max, numz);
     const double dz = zgrid[1] - zgrid[0];
 
     std::cout << "Lx = " << inputs.domain_len_x << ", Ly = " << inputs.domain_len_y << ", Lz = " << inputs.domain_len_z
@@ -104,30 +109,30 @@ void Engine::run() {
         //printing rough indication of simulation progress
         if (z_step == index_1percent) {
             std::cout << "1% reached" << std::endl;
-            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-            std::cout << "Elapsed time = " << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() <<
-                    " (s)" <<
+            auto end = std::chrono::steady_clock::now();
+            auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
+            std::cout << "Elapsed time = " << delta << " (s), expected total run time = " << delta * 100 << " (s)" <<
                     std::endl;
         }
         if (z_step == index_10percent) {
             std::cout << "10% reached" << std::endl;
-            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-            std::cout << "Elapsed time = " << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() <<
-                    " (s)" <<
+            auto end = std::chrono::steady_clock::now();
+            auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
+            std::cout << "Elapsed time = " << delta << " (s), expected total run time = " << delta * 10 << " (s)" <<
                     std::endl;
         }
         if (z_step == index_50percent) {
             std::cout << "50% reached" << std::endl;
-            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-            std::cout << "Elapsed time = " << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() <<
-                    " (s)" <<
+            auto end = std::chrono::steady_clock::now();
+            auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
+            std::cout << "Elapsed time = " << delta << " (s), expected total run time = " << delta * 2 << " (s)" <<
                     std::endl;
         }
     }
     std::cout << "Engine run completed" << std::endl;
-    const std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    std::cout << "Elapsed time = " << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() << " (s)" <<
-            std::endl;
+    auto end = std::chrono::steady_clock::now();
+    auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
+    std::cout << "Elapsed time = " << delta << " (s)" << std::endl;
 
     write_cmplx_hdf5("final_field.h5", field);
     write_cmplx_hdf5("field_slice.h5", field_slice_yz);
@@ -140,9 +145,10 @@ double Engine::get_refractive_index(const double x_bpm, const double y_bpm, doub
 }
 
 
-double Engine::get_min_dz(double dx, double dy) const {
+double Engine::get_min_dz(double dx, double dy, double max_index, double k0, double reference_index) const {
     // from this paper "Analysis of 2-Invariant and 2-Variant Semiconductor Rib Waveguides by Explicit Finite Difference BeamPropagation Method with Nonuniform MeshConfiguration", 1991.
     // only applies to explicit field updates, not the CN scheme.
+    double beta_ref = reference_index * k0;
     double denom = 4.0 / (dx * dx) + 4.0 / (dy * dy) + k0 * k0 * (
                        max_index * max_index - reference_index * reference_index);
     double dz_min = 2.0 * beta_ref / denom;
@@ -151,7 +157,7 @@ double Engine::get_min_dz(double dx, double dy) const {
 
 // just some mock-up profile. I should use the actual fundamental mode.
 multi_array<std::complex<double>, 2> Engine::get_initial_profile(const std::vector<double> &xgrid,
-                                                               const std::vector<double> &ygrid) const {
+                                                                 const std::vector<double> &ygrid) const {
     //todo: in the future this would be read from a file, which is generated by a mode solver, e.g. WGMS3D.
     multi_array<std::complex<double>, 2> initial_profile(extents[numx][numy]);
     std::complex<double> value = {0.0, 0.0};
@@ -182,8 +188,8 @@ multi_array<std::complex<double>, 2> Engine::get_initial_profile(const std::vect
 
 
 multi_array<std::complex<double>, 2> Engine::get_derivative(const multi_array<std::complex<double>, 2> &field,
-                                                          const std::vector<double> &xgrid,
-                                                          const std::vector<double> &ygrid, double z) const {
+                                                            const std::vector<double> &xgrid,
+                                                            const std::vector<double> &ygrid, double z) const {
     multi_array<std::complex<double>, 2> derivative(extents[numx][numy]);
     //update just the middle of the grid, because the boundary values will remain at zero. So set to zero once, then keep it there.
     std::complex<double> prefactor = {0.0, -0.5 / beta_ref};
@@ -232,23 +238,23 @@ multi_array<std::complex<double>, 2> Engine::get_derivative(const multi_array<st
 }
 
 multi_array<std::complex<double>, 2> Engine::do_step_euler(const multi_array<std::complex<double>, 2> &field,
-                                                         const std::vector<double> &xgrid,
-                                                         const std::vector<double> &ygrid, double z,
-                                                         const double dz) const {
+                                                           const std::vector<double> &xgrid,
+                                                           const std::vector<double> &ygrid, double z,
+                                                           const double dz) const {
     multi_array<std::complex<double>, 2> new_field(extents[numx][numy]);
     const multi_array<std::complex<double>, 2> k1 = get_derivative(field, xgrid, ygrid, z);
     for (int idx = 0; idx < numx; idx++) {
         for (int idy = 0; idy < numy; idy++) {
             new_field[idx][idy] = field[idx][idy] + k1[idx][idy] * dz;
-    }
+        }
     }
     return new_field;
 }
 
 multi_array<std::complex<double>, 2> Engine::do_step_rk4(const multi_array<std::complex<double>, 2> &field,
-                                                       const std::vector<double> &xgrid,
-                                                       const std::vector<double> &ygrid, double z,
-                                                       const double dz) const {
+                                                         const std::vector<double> &xgrid,
+                                                         const std::vector<double> &ygrid, double z,
+                                                         const double dz) const {
     //The RK4 method can be rewritten to use less memory. Initialize the new_field as a copy of the old_field.
     // Then compute k1, and add it to the new field. Also use it for k2, then deallocate k1. repeat for k2, k3, k4.
     multi_array<std::complex<double>, 2> new_field(extents[numx][numy]);
@@ -278,7 +284,7 @@ multi_array<std::complex<double>, 2> Engine::do_step_rk4(const multi_array<std::
         for (int idy = 0; idy < numy; idy++) {
             new_field[idx][idy] = field[idx][idy] + (
                                       k1[idx][idy] + 2.0 * k2[idx][idy] + 2.0 * k3[idx][idy] + k4[idx][idy]) * dz / 6.0;
-    }
+        }
     }
 
 
@@ -366,22 +372,22 @@ multi_array<double, 1> Engine::vector_to_multi_array(const std::vector<double> &
     return vec_m;
 }
 
-double Engine::get_conductivityx(double x) const {
-    return get_conductivity_base(x, -0.5 * domain_len_x, 0.5 * domain_len_x);
+double Engine::get_conductivityx(const double x) const {
+    return get_conductivity_base(x, x_min, x_max);
 }
 
-double Engine::get_conductivityy(double y) const {
-    return get_conductivity_base(y, -0.5 * domain_len_y, 0.5 * domain_len_y);
+double Engine::get_conductivityy(const double y) const {
+    return get_conductivity_base(y, y_min, y_max);
 }
 
 
 std::complex<double> Engine::get_qfactorx(double x, double y, double z) const {
-    double pml_index = get_refractive_index(x, y, z); // equal to bordering index value.
+    const double pml_index = get_refractive_index(x, y, z); // equal to bordering index value.
     return 1.0 / std::complex{1.0, -get_conductivityx(x) / (pml_index * pml_index)};
 }
 
 std::complex<double> Engine::get_qfactory(double x, double y, double z) const {
-    double pml_index = get_refractive_index(x, y, z); // equal to bordering index value.
+    const double pml_index = get_refractive_index(x, y, z); // equal to bordering index value.
     return 1.0 / std::complex{1.0, -get_conductivityy(x) / (pml_index * pml_index)};
 }
 
