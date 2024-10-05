@@ -91,8 +91,8 @@ private:
                       multi_array<std::complex<double>, 2> &storage, int idz) const;
 
     int dump_index_slice(const std::string &filename, char direction, double slice_position,
-                         const std::vector<double> &xgrid,
-                         const std::vector<double> &ygrid, const std::vector<double> &zgrid) const;
+                         const std::vector<double> &grid_coordinate1,
+                         const std::vector<double> &grid_coordinate2) const;
 
     multi_array<double, 1> vector_to_multi_array(const std::vector<double> &vec) const;
 };

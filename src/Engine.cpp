@@ -84,9 +84,9 @@ void Engine::run() {
     write_hdf5(file, "zgrid", zgrid_m);
     file.close();
 
-    dump_index_slice("index_start.h5", 'z', 0.0, xgrid, ygrid, zgrid);
-    dump_index_slice("index_end.h5", 'z', zgrid[numz - 1], xgrid, ygrid, zgrid);
-    dump_index_slice("index_cross.h5", 'x', 0.0, xgrid, ygrid, zgrid);
+    dump_index_slice("index_start.h5", 'z', 0.0, xgrid, ygrid);
+    dump_index_slice("index_end.h5", 'z', zgrid[numz - 1], xgrid, ygrid);
+    dump_index_slice("index_cross.h5", 'x', 0.0, ygrid, zgrid);
 
     //define field in current slice to be "field". Since it is a scalar BPM there is no polarization.
     multi_array<std::complex<double>, 2> field = get_initial_profile(xgrid, ygrid);
@@ -314,50 +314,48 @@ void Engine::record_slice(const multi_array<std::complex<double>, 2> &buffer,
     }
 }
 
-int Engine::dump_index_slice(const std::string &filename, const char direction,
-                             const double slice_position, const std::vector<double> &xgrid,
-                             const std::vector<double> &ygrid, const std::vector<double> &zgrid) const {
-    assert(("Slice direction not recognized, use x or y or z",direction=='x' || direction=='y'|| direction=='z'));
-    int num1;
-    int num2;
-    if (direction == 'x') {
-        num1 = numy;
-        num2 = numz;
-    } else if (direction == 'y') {
-        num1 = numx;
-        num2 = numz;
-    } else {
-        num1 = numx;
-        num2 = numy;
-    }
+int Engine::dump_index_slice(const std::string &filename, const char direction, const double slice_position,
+                             const std::vector<double> &grid_coordinate1,
+                             const std::vector<double> &grid_coordinate2) const {
+    assert(("Slice direction not recognized, use x or y or z", direction=='x' || direction=='y'|| direction=='z'));
+
+    const int num1 = static_cast<int>(grid_coordinate1.size());
+    const int num2 = static_cast<int>(grid_coordinate2.size());
     multi_array<double, 2> index_dataset(extents[num1][num2]);
-    if (direction == 'x') {
-        for (int index1 = 0; index1 < num1; index1++) {
-            for (int index2 = 0; index2 < num2; index2++) {
-                index_dataset[index1][index2] = get_refractive_index(slice_position, ygrid[index1], zgrid[index2]);
-            }
-        }
-    } else if (direction == 'y') {
-        for (int index1 = 0; index1 < num1; index1++) {
-            for (int index2 = 0; index2 < num2; index2++) {
-                index_dataset[index1][index2] = get_refractive_index(xgrid[index1], slice_position, zgrid[index2]);
-            }
-        }
-    } else {
-        for (int index1 = 0; index1 < num1; index1++) {
-            for (int index2 = 0; index2 < num2; index2++) {
-                index_dataset[index1][index2] = get_refractive_index(xgrid[index1], ygrid[index2], slice_position);
+    for (int index1 = 0; index1 < num1; index1++) {
+        for (int index2 = 0; index2 < num2; index2++) {
+            if (direction == 'x') {
+                index_dataset[index1][index2] = get_refractive_index(slice_position, grid_coordinate1[index1],
+                                                                     grid_coordinate2[index2]);
+            } else if (direction == 'y') {
+                index_dataset[index1][index2] = get_refractive_index(grid_coordinate1[index1], slice_position,
+                                                                     grid_coordinate2[index2]);
+            } else {
+                index_dataset[index1][index2] = get_refractive_index(grid_coordinate1[index1], grid_coordinate2[index2],
+                                                                     slice_position);
             }
         }
     }
-    auto xgrid_m = vector_to_multi_array(xgrid);
-    auto ygrid_m = vector_to_multi_array(ygrid);
-    auto zgrid_m = vector_to_multi_array(zgrid);
+
+    std::string label1 = "grid1";
+    std::string label2 = "grid2";
+    if (direction == 'x') {
+        label1 = "ygrid";
+        label2 = "zgrid";
+    } else if (direction == 'y') {
+        label1 = "xgrid";
+        label2 = "zgrid";
+    } else {
+        label1 = "xgrid";
+        label2 = "ygrid";
+    }
+
+    const auto grid1 = vector_to_multi_array(grid_coordinate1);
+    const auto grid2 = vector_to_multi_array(grid_coordinate2);
     H5::H5File file(filename, H5F_ACC_TRUNC);
     write_hdf5(file, "refractive_index", index_dataset);
-    write_hdf5(file, "xgrid", xgrid_m);
-    write_hdf5(file, "ygrid", ygrid_m);
-    write_hdf5(file, "zgrid", zgrid_m);
+    write_hdf5(file, label1, grid1);
+    write_hdf5(file, label2, grid2);
     file.close();
 
     return 0;
