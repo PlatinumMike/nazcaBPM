@@ -12,6 +12,7 @@ To compile this program you need:
 * C++ compiler
 * cmake
 * make (or ninja)
+* HDF5 (On ubuntu this is easy, install libhdf5-dev)
 * Boost (install `libboost-all-dev`)
 * python3 (optional)
 
@@ -30,6 +31,9 @@ And compile the program:
 `make -j <ncores>`
 
 with `<ncores>` the number of cores to compile with, e.g. 8.
+
+It may happen that cmake cannot find the required libraries. If you install them with `apt` they will be added to the include path automatically. 
+If you just download a zip file, `cmake` will of course have no idea where to look, unless you manually add this to the include path. 
 
 # Running the program
 The executable in inside the build directory. It takes one command line argument, the name of the input file.

@@ -9,6 +9,8 @@
 #include <vector>
 
 #include "Parameters.h"
+#include <boost/multi_array.hpp>
+using boost::multi_array;
 
 /**
 * Note, the coordinate system is the same as in Fig. 2.1 of the book "Beam propagation method for design of optical waveguide devices", G. Pedrola, 2016.
@@ -28,28 +30,28 @@ public:
 
     double get_min_dz(double dx, double dy) const;
 
-    std::vector<std::complex<double> > get_initial_profile(const std::vector<double> &xgrid,
-                                                           const std::vector<double> &ygrid) const;
+    multi_array<std::complex<double>, 2> get_initial_profile(const std::vector<double> &xgrid,
+                                                             const std::vector<double> &ygrid) const;
 
     //derivative of the field vector w.r.t. z, so du/dz.
-    std::vector<std::complex<double> > get_derivative(const std::vector<std::complex<double> > &field,
-                                                      const std::vector<double> &xgrid,
-                                                      const std::vector<double> &ygrid,
-                                                      double z) const;
+    multi_array<std::complex<double>, 2> get_derivative(const multi_array<std::complex<double>, 2> &field,
+                                                        const std::vector<double> &xgrid,
+                                                        const std::vector<double> &ygrid,
+                                                        double z) const;
 
     // Update field with one step of the forward Euler scheme
-    std::vector<std::complex<double> > do_step_euler(const std::vector<std::complex<double> > &field,
-                                                     const std::vector<double> &xgrid,
-                                                     const std::vector<double> &ygrid, double z, double dz) const;
+    multi_array<std::complex<double>, 2> do_step_euler(const multi_array<std::complex<double>, 2> &field,
+                                                       const std::vector<double> &xgrid,
+                                                       const std::vector<double> &ygrid, double z, double dz) const;
 
     // Update field with one step of the explicit fourth order Runge-Kutta scheme.
     // Using Runge Kutta 4 for explicit time stepping. This has a limited dz step, proportional to dx^2.
     // Which may make it slower than the Crank-Nickelson scheme, it needs to do many more steps.
     // but each individual step is faster, also it has a smaller error per step than CN. So not clear which is faster, tbd.
-    std::vector<std::complex<double> > do_step_rk4(const std::vector<std::complex<double> > &field,
-                                                   const std::vector<double> &xgrid,
-                                                   const std::vector<double> &ygrid,
-                                                   double z, double dz) const;
+    multi_array<std::complex<double>, 2> do_step_rk4(const multi_array<std::complex<double>, 2> &field,
+                                                     const std::vector<double> &xgrid,
+                                                     const std::vector<double> &ygrid,
+                                                     double z, double dz) const;
 
     //get conductivity for the pml, in units of omega*eps0
     double get_conductivityx(double x) const;
@@ -60,7 +62,7 @@ public:
 
     std::complex<double> get_qfactory(double x, double y, double z) const;
 
-    std::vector<double> get_intensity(const std::vector<std::complex<double> > &field);
+    multi_array<double, 2> get_intensity(const multi_array<std::complex<double>, 2> &field) const;
 
 private:
     Parameters _inputs;
@@ -82,15 +84,14 @@ private:
     // helper function to get the conductivity
     double get_conductivity_base(double x, double xmin, double xmax) const;
 
-    // array indexing helper
-    int get_neighbour_index(int i, int j, int ny, int direction = 0) const;
-
-    void record_slice(const std::vector<std::complex<double> > &buffer,
-                      std::vector<std::complex<double> > &storage) const;
+    void record_slice(const multi_array<std::complex<double>, 2> &buffer,
+                      multi_array<std::complex<double>, 2> &storage, int idz) const;
 
     int dump_index_slice(const std::string &filename, char direction, double slice_position,
                          const std::vector<double> &xgrid,
                          const std::vector<double> &ygrid, const std::vector<double> &zgrid) const;
+
+    multi_array<double, 1> vector_to_multi_array(const std::vector<double> &vec) const;
 };
 
 

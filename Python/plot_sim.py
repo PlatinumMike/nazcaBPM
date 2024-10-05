@@ -10,34 +10,47 @@ Loading and plotting the field data
 
 import numpy as np
 import matplotlib.pyplot as plt
+import h5py
 
 
-def get_field(filename: str, Nx: int, Ny: int, cmpx: bool = True):
-    data = np.genfromtxt(filename, delimiter=",")
-    if cmpx:
-        data = data[:, 0] + 1.0j * data[:, 1]
-    data = np.reshape(data, shape=(Nx, Ny))
-    return data
+def get_index(filename: str):
+    f = h5py.File(filename, "r")
+    index = f["refractive_index"][:]
+    f.close()
+    return index
 
 
-nx = 40
-ny = 60
-nz = 4728
-Lx = 4
-Ly = 6
-Lz = 40
-x = np.linspace(-0.5 * Lx, 0.5 * Lx, nx)
-y = np.linspace(-0.5 * Ly, 0.5 * Ly, ny)
-z = np.linspace(0, Lz, nz)
+def get_field(filename: str):
+    f = h5py.File(filename, "r")
+    real = f["real"][:]
+    imag = f["imag"][:]
+    f.close()
+    return real + 1.0j * imag
 
-initial_field = get_field("../build/" + "initial_field.csv", Nx=nx, Ny=ny)
-final_field = get_field("../build/" + "final_field.csv", Nx=nx, Ny=ny)
-field_slice = get_field("../build/" + "field_slice.csv", Nx=nz, Ny=ny)
 
-index_start = get_field("../build/" + "index_start.csv", Nx=nx, Ny=ny, cmpx=False)
-index_end = get_field("../build/" + "index_end.csv", Nx=nx, Ny=ny, cmpx=False)
-index_cross = get_field("../build/" + "index_cross.csv", Nx=ny, Ny=nz, cmpx=False)
+# %% load files
 
+filename = "../build/index_data.h5"
+
+
+f = h5py.File(filename, "r")
+
+x = f["xgrid"][:]
+y = f["ygrid"][:]
+z = f["zgrid"][:]
+index3d = f["refractive_index"][:]
+
+f.close()
+
+
+index_start = get_index("../build/index_start.h5")
+index_end = get_index("../build/index_end.h5")
+index_cross = get_index("../build/index_cross.h5")
+field_slice = get_field("../build/field_slice.h5")
+final_field = get_field("../build/final_field.h5")
+initial_field = get_field("../build/initial_field.h5")
+
+# %% plotting
 
 plt.figure()
 plt.contourf(y, x, initial_field.real, 20)
@@ -55,7 +68,7 @@ intensity = np.abs(field_slice) ** 2
 
 # warning, the y direction is mirrored, because ymin is at the top, ymax at the bottom.
 plt.figure()
-plt.contourf(z, y, intensity.T, 20, cmap="inferno")
+plt.contourf(z, y, intensity, 20, cmap="inferno")
 plt.xlabel("z")
 plt.ylabel("y")
 plt.show()

@@ -3,7 +3,11 @@ project(nazcaBPM)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable("${PROJECT_NAME}.x" src/main.cpp
+find_package(Boost 1.80 REQUIRED)
+find_package(HDF5 1.10 REQUIRED COMPONENTS CXX)
+
+set(EXENAME "${PROJECT_NAME}.x")
+add_executable(${EXENAME} src/main.cpp
         src/Engine.cpp
         src/Engine.h
         src/AuxiliaryFunctions.cpp
@@ -18,7 +22,11 @@ add_executable("${PROJECT_NAME}.x" src/main.cpp
         src/Geometry.cpp
         src/Geometry.h
         src/Polygon.cpp
-        src/Polygon.h)
+        src/Polygon.h
+        src/IO/hdf_writer.h)
+
+target_link_libraries(${EXENAME} PRIVATE HDF5::HDF5)
+target_link_libraries(${EXENAME} PRIVATE Boost::boost)
 
 #set(ENABLE_TEST 1)
 
