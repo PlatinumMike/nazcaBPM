@@ -61,8 +61,7 @@ This should be highly efficient. Also, the Thomas algorithm does not parallelize
 
 
 # License
-todo
+Copyright (c) 2024 Mike Machielsen
 
-Mike Machielsen 2024
+See `LICENSE` file for the details.
 
-This program comes with ABSOLUTELY NO WARRANTY.
