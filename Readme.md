@@ -12,7 +12,7 @@ To compile this program you need:
 * C++ compiler
 * cmake
 * make (or ninja)
-* HDF5 (On ubuntu this is easy, install libhdf5-dev)
+* HDF5 (On ubuntu this is easy, install `libhdf5-dev`)
 * Boost (install `libboost-all-dev`)
 * python3 (optional)
 

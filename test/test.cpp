@@ -5,7 +5,9 @@
 #include "../src/Polygon.h"
 #include "../src/AuxiliaryFunctions.h"
 #include "../src/Geometry.h"
+#include "../src/GridInterpolator.h"
 #include <cmath>
+#include <boost/multi_array.hpp>
 
 
 TEST_CASE("Tri-diagonal matrix solve") {
@@ -100,4 +102,46 @@ TEST_CASE("Check geometry class") {
     CHECK(geometry.get_index(0.37,0.2,0)==index3);
     CHECK(geometry.get_index(0.37,0.2,1.4)==back_index);
     CHECK(geometry.get_index(0.37,0.2,1.05)==index2);
+}
+
+TEST_CASE("Check grid interpolation") {
+    int numx = 6;
+    int numy = 4;
+    auto xgrid = AuxiliaryFunctions::linspace(-4.0, 4.0, numx);
+    auto ygrid = AuxiliaryFunctions::linspace(-2.0, 1.5, numy);
+    boost::multi_array<double, 2> dataset(boost::extents[numx][numy]);
+    for (int i = 0; i < numx; i++) {
+        for (int j = 0; j < numy; j++) {
+            // data = 3x^2-0.3y+8
+            dataset[i][j] = 3.0 * xgrid[i] * xgrid[i] - 0.3 * ygrid[j] + 8.0;
+        }
+    }
+    double external_value = 0.0;
+
+
+    // get value at some sample points
+    GridInterpolator<double> grid_interpolator(xgrid, ygrid, dataset, 0.0);
+
+    // outside values
+    CHECK(grid_interpolator.get_value(0.1, 16.0)==external_value);
+    CHECK(grid_interpolator.get_value(-5.0, 0.0)==external_value);
+
+    // add some internal points in the middle
+    CHECK(grid_interpolator.get_value(-1.12, 0.3)==doctest::Approx(12.902));
+    CHECK(grid_interpolator.get_value(-1.82,0.45)==doctest::Approx(19.577));
+    CHECK(grid_interpolator.get_value(2.0,0.11)==doctest::Approx(21.407));
+    CHECK(grid_interpolator.get_value(2.2,0.11)==doctest::Approx(23.327));
+
+    // corner values
+    CHECK(grid_interpolator.get_value(4.0, 1.5)==doctest::Approx(55.55));
+    CHECK(grid_interpolator.get_value(4.0, -2.0)==doctest::Approx(56.6));
+    CHECK(grid_interpolator.get_value(-4.0, -2.0)==doctest::Approx(56.6));
+    CHECK(grid_interpolator.get_value(-4.0, 1.5)==doctest::Approx(55.55));
+
+    // edge values
+    CHECK(grid_interpolator.get_value(-4.0, 0.0)==doctest::Approx(56.0));
+    CHECK(grid_interpolator.get_value(4.0, 0)==doctest::Approx(56.0));
+
+    // internal point which happens to be exactly on a grid point.
+    CHECK(grid_interpolator.get_value(-2.4, 1.0/3.0)==doctest::Approx(25.18));
 }
