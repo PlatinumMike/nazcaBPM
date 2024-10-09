@@ -1,0 +1,185 @@
+\documentclass[]{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{empheq}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{doi}
+
+%opening
+\title{Derivation of the BPM equations}
+\author{Mike Machielsen}
+
+\begin{document}	
+	\maketitle
+	
+	
+	\section{Intro}
+	Photonic integrated circuits (PICs) have applications in many areas. However, to properly design them we need to simulate them accurately. There are many ways to do that, one of them being the beam propagation method (BPM). It cuts some corners in the physics, but it is very fast, typically orders of magnitude faster than EME or FDTD. Which makes it a useful tool to rapidly comb through the parameter space. The more rigorous EME/FDTD solvers can then be used to do the final optimization.\\	
+	
+	These notes describe how one such BPM is implemented here. It is not the goal of these notes to exhaustively describe BPM, for that see Ref. \cite{Lifante_2015}. The derivation in these notes follows along the lines of the book, but differs in some notation and choice of coordinates. %also there are some critical typos in the book I think..., so that is reason enough to rederive it and confirm.
+	
+	\section{Coordinate system}
+	The typical coordinate system is shown in Fig. 2.1 of \cite{Lifante_2015}. The propagation direction is the $z$ direction, the $x$ direction is normal to the PIC, and $y$ is tangent to the PIC. This I will refer to as ``classical coordinates'', since it is used most often in BPM literature.\\
+	
+	I will define another right-handed Cartesian coordinate system, called ``nazca coordinates''. This is convenient for integration with PIC layout software as we usually view the PIC from above and call the horizontal direction $x$ and the vertical $y$. Both of these lie in the plane of the PIC, so the $z$ direction is normal to the PIC. Also by convention the propagation direction is usually from left to right, when viewing from above, so that would be the $x$ direction. In short, we make the following substitution:
+	\begin{subequations}
+		\begin{align}
+			x_\text{nazca} &= z_\text{classical}\, ,\\
+			y_\text{nazca} &= -y_\text{classical}\, , \\
+			z_\text{nazca} &= x_\text{classical}\, .
+		\end{align}
+	\end{subequations}
+	Unless specified otherwise, classical coordinates are used.
+	
+	\section{Beam propagation method}
+	Let us start from the very basis, Maxwell's equations.
+	\subsection{Maxwell's equations}
+	Maxwell's equations in macroscopic form are as follows:
+	\begin{subequations}
+		\begin{align}
+			\nabla \cdot \textbf{D} &= \rho_f \, , \\
+			\nabla \cdot \textbf{B} &= 0 \, ,\\
+			\nabla \times \textbf{E} &= -\frac{\partial \textbf{B}}{\partial t}\, ,\\
+			\nabla \times \textbf{H} &= \textbf{J}_f + \frac{\partial \textbf{D}}{\partial t} \, ,
+		\end{align}
+		\label{Maxwell}
+	\end{subequations}
+	where $\textbf{D}$ is the electric displacement, $\textbf{H}$ the magnetizing field, $\textbf{E}$ the electric field, and $\textbf{B}$ the magnetic field. $\rho_f$ is the free charge density, and $\textbf{J}_f$ the free current density.\\
+	
+	We will now make an assumption on the constitutive relation, let the medium be linear, isotropic and local. So, the auxiliary fields are
+	\begin{subequations}
+		\begin{align}
+			\textbf{D} &= \varepsilon \textbf{E}\, ,\\
+			\textbf{B} &= \mu \textbf{H} \, .
+		\end{align}
+	\end{subequations}
+	Typically materials in the world of integrated photonics are non-magnetic, so $\mu = \mu_0$. But material properties will depend on the position (inhomogeneous), and on the frequency of the light (dispersive). We will also assume that $\varepsilon$ is constant in time.\\
+	
+	Free currents follow Ohm's law (to good approximation):
+	\begin{equation}
+		\textbf{J}_f = \sigma \textbf{E} \, ,
+	\end{equation}
+	with $\sigma$ the material's conductivity. PICs have very low conductivity, so free currents are usually neglected. From charge conservation we can also derive that if $\textbf{J}_f \approx \textbf{0}$, the free charge is constant in time, so negligible too (zero initial conditions).\\
+	
+	In summary we have so far:
+		\begin{subequations}
+		\begin{align}
+			\nabla \cdot \left( \varepsilon \textbf{E}\right)  &= 0\, , \\
+			\nabla \cdot \textbf{H} &= 0 \, ,\\
+			\nabla \times \textbf{E} &= -\mu_0 \frac{\partial \textbf{H}}{\partial t}\, ,\label{test1}\\			
+			\nabla \times \textbf{H} &= \varepsilon \frac{\partial \textbf{E}}{\partial t} \, , 	\label{test2}		
+		\end{align}
+		\label{Maxwell2}
+	\end{subequations}
+	By combining Eq. \eqref{test1}, \eqref{test2} we obtain the double curl equation:
+	\begin{equation}
+		\nabla \times \left( \nabla \times \textbf{E}\right)  +\mu_0 \varepsilon \partial_t^2 \textbf{E} = \textbf{0}\,.
+		\label{double_curl_time}
+	\end{equation}	
+	You can also obtain a double curl equation for the $\textbf{H}$ field, but most BPM solvers use the $\textbf{E}$ field. There is no strong preference for either formulation, but it makes sense to solve for the field we care about the most, the $\textbf{E}$ field. Hence that is what we do here.\\
+	
+	The vector Laplacian is defined as $\nabla^2 \textbf{A} := \nabla(\nabla\cdot \textbf{A})-\nabla \times \nabla \times \textbf{A}$, so we can write Eq. \eqref{double_curl_time} as:
+	\begin{equation}
+		\nabla^2 \textbf{E} -  \nabla(\nabla\cdot \textbf{E}) -\mu_0 \varepsilon \partial_t^2 \textbf{E} = \textbf{0}\, .
+	\end{equation}
+	
+	In the frequency domain $\partial_t \to i\omega$. Also we will define $k_0 := \omega/c$, and the refractive index as $n:=\sqrt{\varepsilon/\varepsilon_0}$, so we get:
+	\begin{equation}
+		\nabla^2 \textbf{E} -  \nabla(\nabla\cdot \textbf{E}) +n^2k_0^2 \textbf{E} = \textbf{0}\, .
+	\end{equation}
+	From Gauss's law we have $\varepsilon \nabla\cdot \textbf{E} = - \frac{1}{\varepsilon}\nabla \varepsilon \cdot \textbf{E}$, so we can write:
+	\begin{equation}
+		\nabla^2 \textbf{E} +  \nabla\left( \frac{\nabla(n^2)}{n^2}\cdot \textbf{E}\right)  +n^2k_0^2 \textbf{E} = \textbf{0}\, .
+		\label{Laplacian_eq}
+	\end{equation}
+	
+	Eq. \eqref{Laplacian_eq} is actually three equations:
+	\begin{subequations}
+		\begin{align}
+			\nabla^2 E_x + \frac{\partial}{\partial x}\left(\frac{1}{n^2}\frac{\partial n^2}{\partial x} E_x+\frac{1}{n^2}\frac{\partial n^2}{\partial y} E_y+\frac{1}{n^2}\frac{\partial n^2}{\partial z} E_z \right)+n^2 k_0^2 E_x = 0\, ,\\ 
+			\nabla^2 E_y + \frac{\partial}{\partial y}\left(\frac{1}{n^2}\frac{\partial n^2}{\partial x} E_x+\frac{1}{n^2}\frac{\partial n^2}{\partial y} E_y+\frac{1}{n^2}\frac{\partial n^2}{\partial z} E_z \right)+n^2 k_0^2 E_y = 0\, ,\\
+			\nabla^2 E_z + \frac{\partial}{\partial z}\left(\frac{1}{n^2}\frac{\partial n^2}{\partial x} E_x+\frac{1}{n^2}\frac{\partial n^2}{\partial y} E_y+\frac{1}{n^2}\frac{\partial n^2}{\partial z} E_z \right)+n^2 k_0^2 E_z = 0\, .
+		\end{align}
+	\end{subequations}
+	
+	We will now limit ourselves to \textbf{slowly varying} structures in the propagation direction, so we may neglect $\partial_z n^2$. So for the two transverse components we have:
+	\begin{subequations}
+		\begin{align}
+			\nabla^2 E_x + \frac{\partial}{\partial x}\left(\frac{1}{n^2}\frac{\partial n^2}{\partial x} E_x+\frac{1}{n^2}\frac{\partial n^2}{\partial y} E_y \right)+n^2 k_0^2 E_x = 0\, ,\\ 
+			\nabla^2 E_y + \frac{\partial}{\partial y}\left(\frac{1}{n^2}\frac{\partial n^2}{\partial x} E_x+\frac{1}{n^2}\frac{\partial n^2}{\partial y} E_y \right)+n^2 k_0^2 E_y = 0\, .
+		\end{align}
+		\label{main_eqs}
+	\end{subequations}
+	
+	
+	\subsection{BPM equations}
+	%todo: Redo the derivation in nazca coordinates as well (from the point where it starts to diverge).
+	We may define the envelope function $\Psi$ in the following way, which is still without additional approximations:
+	\begin{subequations}
+		\begin{align}
+			E_x(x,y,z) = \Psi_x(x,y,z) e^{-ik_0 n_0 z}\, ,\\
+			E_y(x,y,z) = \Psi_y(x,y,z) e^{-ik_0 n_0 z}\, ,
+		\end{align}
+		\label{envelope_split}
+	\end{subequations}
+	where $n_0$ is a yet to be chosen ``reference index''\footnote{This is another weakness of BPM. You have to choose $n_0$. Typically we choose this equal to the effective index. But what do you do when this varies in the propagation direction, or what if you have multiple modes with a different effective index? You can choose $n_0$ equal to the average of those, but the approximation of Eq. \eqref{paraxial_approx} will not be accurate for every mode and every $z$ position.}. 
+	Since the propagation is mainly along $z$ direction, and the structures are varying slowly in that direction, the envelope function will vary slowly in $z$ direction, compared to the rapidly oscillating phase term. More explicitly,
+	we have:
+	\begin{equation}
+		\left|\frac{\partial^2 \Psi_x}{\partial z^2} \right| \ll n_0 k_0 \left| \frac{\partial \Psi_x}{\partial z} \right|\, ,
+		\label{paraxial_approx}
+	\end{equation}
+	and the same for $\Psi_y$. This is called the Paraxial approximation. This is somewhat crude, but also very powerful, all the second order derivatives in $z$ drop out. We are left with only a first order derivative in $z$, and given an input field at $z=0$ (analogous to an initial condition), we can march along the $z$ direction and calculate the field at any $z>0$. The steps $\Delta z$ can on the wavelength scale $1/k_0$ or even larger, since the phase part is eliminated.\\
+	
+	Plugging Eq. \eqref{envelope_split} into Eq. \eqref{main_eqs} and applying the Paraxial approximation yields:
+	\begin{subequations}
+		\begin{align}
+			2i k_0 n_0 \frac{\Psi_x}{\partial z} &= \frac{\partial^2\Psi_x}{\partial x^2}+\frac{\partial^2\Psi_x}{\partial y^2}+\frac{\partial}{\partial x}\left(\frac{1}{n^2}\frac{\partial n^2}{\partial x} \Psi_x+\frac{1}{n^2}\frac{\partial n^2}{\partial y} \Psi_y \right)+k_0^2(n^2-n_0^2)\Psi_x \, ,\\
+			2i k_0 n_0 \frac{\Psi_y}{\partial z} &= \frac{\partial^2\Psi_y}{\partial x^2}+\frac{\partial^2\Psi_y}{\partial y^2}+\frac{\partial}{\partial y}\left(\frac{1}{n^2}\frac{\partial n^2}{\partial x} \Psi_x+\frac{1}{n^2}\frac{\partial n^2}{\partial y} \Psi_y \right)+k_0^2(n^2-n_0^2)\Psi_y  \, .
+		\end{align}
+	\end{subequations}
+	
+	This can be refactored as:
+	\begin{subequations}
+		\begin{align}
+			2i k_0 n_0 \frac{\Psi_x}{\partial z} &= P_{xx} \Psi_x+P_{xy} \Psi_y \, ,\\
+			2i k_0 n_0 \frac{\Psi_y}{\partial z} &= P_{yy} \Psi_y+P_{yx} \Psi_x \, .
+		\end{align}
+		\label{bpm_eq1}
+	\end{subequations}
+	with the following definitions:
+	\begin{subequations}
+		\begin{align}
+			P_{xx} f &:= \frac{\partial}{\partial x}\left(\frac{1}{n^2}\frac{\partial (n^2 f)}{\partial x}  \right)+\frac{\partial^2 f}{\partial y^2}+k_0^2(n^2-n_0^2)f\, , \\
+			P_{xy} f &:= \frac{\partial}{\partial x}\left(\frac{1}{n^2}\frac{\partial (n^2 f)}{\partial y}  \right) - \frac{\partial^2 f}{\partial x \partial y}\, ,\\
+			P_{yx} f &:= \frac{\partial}{\partial y}\left(\frac{1}{n^2}\frac{\partial (n^2 f)}{\partial x}  \right) - \frac{\partial^2 f}{\partial x \partial y}\, ,\\
+			P_{yy} f &:= \frac{\partial}{\partial y}\left(\frac{1}{n^2}\frac{\partial (n^2 f)}{\partial y}  \right)+\frac{\partial^2 f}{\partial x^2}+k_0^2(n^2-n_0^2)f\, .\\
+		\end{align}
+	\end{subequations}
+	The operator has been rewritten in such a way that the derivative applies to $n^2 \Psi_x$ and $n^2 \Psi_y$ as a whole. This is convenient, because the normal component of $\textbf{E}$ may be discontinuous at a dielectric interface. However, $\textbf{D}$ is not. Likewise, $\Psi$ may be discontinuous, but $n^2 \Psi$ is not.
+	
+	\subsection{Semi-Vectorial formulation}
+	In this case we neglect index variations in one transverse direction\footnote{In addition to the $z$ direction, because we already neglected $\partial_z n^2$.}, so that the two equations \eqref{bpm_eq1} decouple (the cross terms disappear). 
+		
+	\subsection{Scalar formulation}
+	In this case we neglect index variations in two transverse directions. This reduces Eq. \eqref{bpm_eq1} down to just one equation:
+	\begin{equation}
+		2i k_0 n_0 \frac{\partial u}{\partial z} = \frac{\partial^2u}{\partial x^2}+\frac{\partial^2u}{\partial y^2}+k_0^2(n^2-n_0^2)u \, ,\\
+	\end{equation}
+	with $u$ the scalar envelope. The distinction between TE and TM modes is lost in this representation.
+	
+	
+	\subsection{Numerical implementation}
+	
+	
+	
+	
+	
+	
+	\bibliographystyle{ieeetr}
+	\bibliography{bibliography}
+	
+\end{document}
