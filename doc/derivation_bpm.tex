@@ -22,6 +22,7 @@
 	These notes describe how one such BPM is implemented here. It is not the goal of these notes to exhaustively describe BPM, for that see Ref. \cite{Lifante_2015}. The derivation in these notes follows along the lines of the book, but differs in some notation and choice of coordinates. %also there are some critical typos in the book I think..., so that is reason enough to rederive it and confirm.
 	
 	\section{Coordinate system}
+	%todo: add simple image of the coordinate systems here.
 	The typical coordinate system is shown in Fig. 2.1 of \cite{Lifante_2015}. The propagation direction is the $z$ direction, the $x$ direction is normal to the PIC, and $y$ is tangent to the PIC. This I will refer to as ``classical coordinates'', since it is used most often in BPM literature.\\
 	
 	I will define another right-handed Cartesian coordinate system, called ``nazca coordinates''. This is convenient for integration with PIC layout software as we usually view the PIC from above and call the horizontal direction $x$ and the vertical $y$. Both of these lie in the plane of the PIC, so the $z$ direction is normal to the PIC. Also by convention the propagation direction is usually from left to right, when viewing from above, so that would be the $x$ direction. In short, we make the following substitution:
@@ -168,15 +169,109 @@
 	In this case we neglect index variations in two transverse directions. This reduces Eq. \eqref{bpm_eq1} down to just one equation:
 	\begin{equation}
 		2i k_0 n_0 \frac{\partial u}{\partial z} = \frac{\partial^2u}{\partial x^2}+\frac{\partial^2u}{\partial y^2}+k_0^2(n^2-n_0^2)u \, ,\\
+		\label{scalar_eq}
 	\end{equation}
-	with $u$ the scalar envelope. The distinction between TE and TM modes is lost in this representation.
+	with $u$ the scalar envelope. The distinction between TE and TM modes is lost in this representation. Note the similarity between Eq. \eqref{scalar_eq} and the heat equation or diffusion equation. The time derivative is replaced by a derivative with respect to $z$. And an initial condition is replaced by an input profile. Instead of marching in time we advance the solution along the $z$ direction.
 	
 	
-	\subsection{Numerical implementation}
+	\subsection{Numerical implementation}	
+	We will try to find an approximate solution to Eq. \eqref{scalar_eq} using finite differences. We can calculate $u(x,y, z+\Delta z)$ from $u(x,y,z)$ with many different methods. For instance, 4th order explicit Runge-Kutta is very popular; it is easy to implement and accurate. Because it is an \textit{explicit} method, we only need to do a matrix-vector multiply to update the field, so it also requires little RAM. However, in order for the method to be stable, the maximal step size for explicit methods is limited to \cite{Chung_Dagli_1991}:
+	\begin{equation}
+		\Delta z < 2 k_0 n_0 \left[\frac{4}{\Delta x_{\text{min}}^2} +\frac{4}{\Delta y_{\text{min}}^2}+k_0^2\left| n_{\text{max}}^2-n_0^2\right|  \right] ^{-1}\, .
+	\end{equation}	
+	For example, for a typical grid size of $\Delta x= \Delta y $ = 10 nm, we have $\Delta z < 0.1$ nm\footnote{Depending on precise material settings, just using typical values here.}. This is very unfortunate because one big advantage of BPM is that we do not need to resolve the sub-wavelength scale in $z$ direction. But with an explicit method we have to, not because of the truncation error, but because of stability of the scheme.\\
 	
+	\textit{Implicit} schemes on the other hand are usually unconditionally stable, which means that the step size along $z$ can be arbitrarily large\footnote{Do not conflate stability with accuracy, just because it is stable does not mean the solution is accurate.}. The downside of implicit methods is that we have to solve a linear system (of the type $Ax=b$) at every iteration. This is far more expensive than a single explicit iteration, but it is still worth it because $\Delta z$ can be orders of magnitude larger. Most BPM solvers implement the Crank-Nicolson scheme. It is second order accurate, and the matrix to invert is tri-diagonal. This means we can apply the Thomas algorithm which has a time complexity of $O(N)$, where $N$ is the number of grid points in the $xy$ mesh.\\
 	
+	Following along Section 3.2.2 of Ref. \cite{Lifante_2015}, we define the operator $G$:
+	\begin{subequations}
+		\begin{align}
+			G &:= G_x+G_y \, ,\\
+			G_x &:=\frac{\partial^2}{\partial x^2}+\frac{1}{2}k_0^2(n^2-n_0^2)\, ,\\
+			G_y &:=\frac{\partial^2}{\partial y^2}+\frac{1}{2}k_0^2(n^2-n_0^2)\, .\\
+		\end{align}		
+	\end{subequations}
+	This splitting is important later on, so that we can apply the alternating direction implicit (ADI) method. Eq. \eqref{scalar_eq} can be written as:
+	\begin{equation}
+		2i k_0 n_0 \frac{\partial u}{\partial z} = G u = G_x u + G_y u\, .
+		\label{G_operator_on_u}
+	\end{equation}
+	We will use a rectangular mesh to grid $x,y$:
+	\begin{subequations}
+		\begin{align}
+			x_p = -\frac{L_x}{2}+\Delta x\cdot p \quad, p = 0,1,...,P-1\, ,\\
+			y_q = -\frac{L_y}{2}+\Delta y\cdot q \quad, q = 0,1,...,Q-1\, .
+		\end{align}
+	\end{subequations}
+	The value of $u$ on these grid points we will indicate as $u_{p,q}^r$. Where the superscript $r$ indicates the step along the propagation direction. These values can be stored in a vector\footnote{This vector excludes points on the boundary of the domain. This is because those values are set by the BCs, and do not need to be updated, see section \ref{BC_section}.}:
+	\begin{equation}
+		u^r := \begin{pmatrix}
+			u_{0,0}\\
+			u_{0,1}\\
+			u_{0,2}\\
+			...\\
+			u_{1,0}\\
+			u_{1,1}\\
+			u_{1,2}\\
+			...\\
+			u_{P-1,Q-3}\\
+			u_{P-1,Q-2}\\
+			u_{P-1,Q-1}\\
+			\end{pmatrix}
+			\label{uvector}
+	\end{equation}
+	So we get:
+	\begin{equation}
+		2ik_0 n_0 \frac{u^{r+1}-r^r}{\Delta z} = (1-\alpha)\left( G_x u^r+G_y u^r\right) +\alpha\left( G_x u^{r+1}+G_y u^{r+1}\right)\, .
+		\label{scalar_eq_discretized}
+	\end{equation}
+	This is a weighted sum between the forward and backward Euler methods, with $\alpha\in[0,1]$ is the scheme parameter. If $\alpha=0$ we have the forward Euler method, with $\alpha=1$ we have the backward Euler method, and with $\alpha=1/2$ we have the classical Crank-Nicolson method. For stability we require $\alpha \ge 0.5$. See \cite{Lifante_2015} for a lengthy discussion on the best choice for $\alpha$, in short, we typically choose a value slightly over 0.5. Note, the operators $G_x, G_y$ in Eq. \eqref{scalar_eq_discretized} are discretized as well using finite differences.
+	\begin{equation}
+		\frac{\partial^2 u}{\partial x^2} \to \frac{u_{p+1,q}-2u_{p,q}+u_{p-1,q}}{\Delta x^2}\, .
+	\end{equation}
 	
+	Rearranging Eq. \eqref{scalar_eq_discretized} gives:
+	\begin{equation}
+		\left(1+\frac{i\alpha \Delta z}{2k_0 n_0}(G_x+G_y) \right) u^{r+1} = \left(1-\frac{i(1-\alpha) \Delta z}{2k_0 n_0}(G_x+G_y) \right) u^r \, .
+	\end{equation}
+	The operator on the left hand side (LHS) is a matrix with five non-zero diagonal bands. In order to factor it into two tri-diagonal matrices we add a negligible extra term on both the LFS and RHS:
 	
+	\begin{multline*}
+		\left(1+\frac{i\alpha \Delta z}{2k_0 n_0}(G_x+G_y) + \left(\frac{i\alpha \Delta z}{2k_0 n_0} \right) ^2 G_x G_y \right) u^{r+1} =\\
+		 \left(1-\frac{i(1-\alpha) \Delta z}{2k_0 n_0}(G_x+G_y) +\left( \frac{i(1-\alpha) \Delta z}{2k_0 n_0}\right)^2 G_x G_y \right) u^r \, ,
+	\end{multline*}
+	which we can factor to get:
+	\begin{multline}
+		\left(1+\frac{i\alpha \Delta z}{2k_0 n_0}G_x \right)\left(1+\frac{i\alpha \Delta z}{2k_0 n_0}G_y \right) u^{r+1} = \\
+		\left(1-\frac{i(1-\alpha) \Delta z}{2k_0 n_0}G_x \right)\left(1-\frac{i(1-\alpha) \Delta z}{2k_0 n_0}G_y \right) u^r \, .
+		\label{ADI_setup}
+	\end{multline}
+	
+	Note: up to here we followed along the lines of the book\cite{Lifante_2015}. But I don't understand what Lifante does next. In Eq. (3.78) there is the $G_y$ operator, not the $G_x$ operator. Surely you would ``peel away'' one operator by multiplying with the inverse from the left on both sides, which means we invert the operator with $G_x$ first, then $G_y$... I am not sure that is correct.\\
+	
+	So we will now follow the procedure of Masoudi, chapter 6.2.1 \cite{masoudi1995parallel}, since this is what I would have done too. First we define the following vectors:
+	\begin{subequations}
+		\begin{align}
+			V^r &:= \left(1+\frac{i\alpha \Delta z}{2k_0 n_0}G_y \right) u^r\, ,\\
+			W^r &:= \left(1-\frac{i(1-\alpha) \Delta z}{2k_0 n_0}G_x \right)\left(1-\frac{i(1-\alpha) \Delta z}{2k_0 n_0}G_y \right) u^r \, .
+		\end{align}
+	\end{subequations}
+	This is just a definition, so no further approximations are made. Eq. \eqref{ADI_setup} can be written as:
+	\begin{equation}
+		\left(1+\frac{i\alpha \Delta z}{2k_0 n_0}G_x \right) V^{r+1} = W^r\, .
+	\end{equation}
+	The right hand side is readily computed, it only needs the old field values, which are known. The vector $V^{r+1}$ is yet to be determined, so the first step is to invert the operator on the left. Since it contains only the derivative in one direction this is a tri-diagonal matrix\footnote{Strictly speaking it is not tri-diagonal. The bands are not near the diagonal, they are $Q$ bands away because of the formatting of the solution vector. The next grid neighbor in $x$ direction is $Q$ rows down in Eq. \eqref{uvector}. This is no problem though, you could just reformat it into $Q$ independent problems with each a tri-diagonal matrix. Solve it, then format back. Note, this reformatting is just a way of explaining the math, in the actual implementation this can be skipped for more efficient memory usage.}, which we can rapidly solve with the Thomas algorithm. Now that we have $V^{r+1}$, the last step is to solve for $u^{r+1}$ in yet another tri-diagonal problem:
+	\begin{equation}
+		\left(1+\frac{i\alpha \Delta z}{2k_0 n_0}G_y \right) u^{r+1} = V^{r+1}\, .
+	\end{equation}
+	
+	\subsection{Boundary conditions}
+	\label{BC_section}	
+	Note, the perfectly matched layer (PML) is not itself a boundary condition (BC), it is a layer that sits \textit{inside} of your modeling domain. You still need to specify an actual BC on the edge of the domain. For this we will go with the simplest possible one, homogeneous Dirichlet BCs, i.e. $u=0$. This will not result in any significant reflection because the light will need to pass through the PML twice before entering back into the region of interest. The PML uses a parabolic conductivity profile.\\
+	
+	We will use these BCs and PML in the two transverse directions. Since Eq. \eqref{scalar_eq} is a one-way wave model we only need one BC in the propagation direction: the input field. No BC is needed, nor can it be specified, at the final $z$ location where the simulation stops.
+	
+	%todo: explain about conductivity profile, and discretized version of d^2/dx^2 when adding a PML.
 	
 	
 	\bibliographystyle{ieeetr}
