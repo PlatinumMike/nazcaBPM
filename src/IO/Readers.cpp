@@ -24,21 +24,30 @@ Parameters Readers::readJSON(const std::string &inputFileName) {
         inputs.wl = root.get<double>("wl");
         inputs.resolution_x = root.get<int>("resolution_x");
         inputs.resolution_y = root.get<int>("resolution_y");
+        inputs.resolution_z = root.get<int>("resolution_z");
         inputs.domain_len_x = root.get<double>("domain_len_x");
         inputs.domain_len_y = root.get<double>("domain_len_y");
         inputs.domain_len_z = root.get<double>("domain_len_z");
         inputs.pml_strength = root.get<double>("pml_strength");
         inputs.pml_thickness = root.get<double>("pml_thickness");
+        inputs.scheme_parameter = root.get<double>("scheme_parameter");
 
 
         //compute derived quantities
         int numx = static_cast<int>(inputs.domain_len_x * inputs.resolution_x);
         int numy = static_cast<int>(inputs.domain_len_y * inputs.resolution_y);
+        int numz = static_cast<int>(inputs.domain_len_z * inputs.resolution_z);
 
 
         inputs.numx = numx;
         inputs.numy = numy;
+        inputs.numz = numz;
         inputs.num_slice = numx * numy;
+        inputs.dx = inputs.domain_len_x / (numx - 1);
+        inputs.dy = inputs.domain_len_y / (numy - 1);
+        inputs.dz = inputs.domain_len_z / (numz - 1);
+
+
         inputs.k0 = 2 * std::numbers::pi / inputs.wl;
         inputs.beta_ref = inputs.k0 * inputs.reference_index;
 
@@ -94,6 +103,7 @@ void Readers::testParameters(const Parameters &params) {
     assert(params.wl > 0);
     assert(params.resolution_x > 0);
     assert(params.resolution_y > 0);
+    assert(params.resolution_z > 0);
     assert(params.domain_len_x > 0);
     assert(params.domain_len_y > 0);
     assert(params.domain_len_z > 0);
