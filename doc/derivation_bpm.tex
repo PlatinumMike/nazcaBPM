@@ -203,7 +203,7 @@
 			y_q = -\frac{L_y}{2}+\Delta y\cdot q \quad, q = 0,1,...,Q-1\, .
 		\end{align}
 	\end{subequations}
-	The value of $u$ on these grid points we will indicate as $u_{p,q}^r$. Where the superscript $r$ indicates the step along the propagation direction. These values can be stored in a vector\footnote{This vector excludes points on the boundary of the domain. This is because those values are set by the BCs, and do not need to be updated, see section \ref{BC_section}.}:
+	The value of $u$ on these grid points we will indicate as $u_{p,q}^r$. Where the superscript $r$ indicates the step along the propagation direction. These values can be stored in a vector:
 	\begin{equation}
 		u^r := \begin{pmatrix}
 			u_{0,0}\\
@@ -220,7 +220,7 @@
 			\end{pmatrix}
 			\label{uvector}
 	\end{equation}
-	So we get:
+	So we get\footnote{Points on the boundary of the domain are set by the BCs, and do not need to be updated, see section \ref{BC_section}. So Eq. \eqref{scalar_eq_discretized} is only applied to the inside of the grid.}:
 	\begin{equation}
 		2ik_0 n_0 \frac{u^{r+1}-r^r}{\Delta z} = (1-\alpha)\left( G_x u^r+G_y u^r\right) +\alpha\left( G_x u^{r+1}+G_y u^{r+1}\right)\, .
 		\label{scalar_eq_discretized}
@@ -228,6 +228,7 @@
 	This is a weighted sum between the forward and backward Euler methods, with $\alpha\in[0,1]$ is the scheme parameter. If $\alpha=0$ we have the forward Euler method, with $\alpha=1$ we have the backward Euler method, and with $\alpha=1/2$ we have the classical Crank-Nicolson method. For stability we require $\alpha \ge 0.5$. See \cite{Lifante_2015} for a lengthy discussion on the best choice for $\alpha$, in short, we typically choose a value slightly over 0.5. Note, the operators $G_x, G_y$ in Eq. \eqref{scalar_eq_discretized} are discretized as well using finite differences.
 	\begin{equation}
 		\frac{\partial^2 u}{\partial x^2} \to \frac{u_{p+1,q}-2u_{p,q}+u_{p-1,q}}{\Delta x^2}\, .
+		\label{double_derivative}
 	\end{equation}
 	
 	Rearranging Eq. \eqref{scalar_eq_discretized} gives:
@@ -269,9 +270,33 @@
 	\label{BC_section}	
 	Note, the perfectly matched layer (PML) is not itself a boundary condition (BC), it is a layer that sits \textit{inside} of your modeling domain. You still need to specify an actual BC on the edge of the domain. For this we will go with the simplest possible one, homogeneous Dirichlet BCs, i.e. $u=0$. This will not result in any significant reflection because the light will need to pass through the PML twice before entering back into the region of interest. The PML uses a parabolic conductivity profile.\\
 	
-	We will use these BCs and PML in the two transverse directions. Since Eq. \eqref{scalar_eq} is a one-way wave model we only need one BC in the propagation direction: the input field. No BC is needed, nor can it be specified, at the final $z$ location where the simulation stops.
+	We will use these BCs and PML in the two transverse directions. Since Eq. \eqref{scalar_eq} is a one-way wave model we only need one BC in the propagation direction: the input field. No BC is needed, nor can it be specified, at the final $z$ location where the simulation stops.\\
 	
-	%todo: explain about conductivity profile, and discretized version of d^2/dx^2 when adding a PML.
+	The derivation of PML is rather lengthy, but the end result is the following substitution in Eq. \eqref{scalar_eq}:
+	\begin{subequations}
+		\begin{align}
+			\frac{\partial^2 u}{\partial x^2} \to \eta \frac{\partial}{\partial x}\left(  \eta \frac{\partial u}{\partial x}\right) \, ,\\
+			\frac{\partial^2 u}{\partial y^2} \to \xi \frac{\partial}{\partial y}\left(  \xi \frac{\partial u}{\partial y}\right) \, .
+		\end{align}
+	\end{subequations}
+	Where $\eta$ is defined as:
+	\begin{equation}
+		\eta := \left(1-\frac{i\sigma(x)}{\varepsilon_0 \omega n^2} \right)^{-1}\, .
+	\end{equation}
+	The conductivity profile is:
+	\begin{equation}
+		\sigma(x):= \begin{cases}
+			\sigma_{\text{max}}\left( \frac{x-(\delta-L/2)}{\delta}\right)^2 \, &, x <-L/2+\delta\\
+			0&, -L/2+\delta \le x \le L/2 - \delta\\
+			\sigma_{\text{max}}\left( \frac{x-(L/2-\delta)}{\delta}\right)^2 \, &, x > L/2 - \delta
+		\end{cases}
+	\end{equation}
+	and $\delta$ is the PML thickness and $\sigma_{\text{max}}$ the PML strength. In the $y$ direction the same procedure is applied with $\xi$ (not shown here). In the corners of the domain two PMLs will overlap, but this is not a problem. Notice that the equations are not modified anywhere, except inside the PML. The second derivative is now discretized as follows:
+	\begin{multline}
+		\eta \frac{\partial}{\partial x}\left(  \eta \frac{\partial u}{\partial x}\right)  \to\\
+		\frac{\eta_{p,q}}{2\Delta x^2}\left[(\eta_{p,q}+\eta_{p+1,q})u_{p+1,q} -(\eta_{p+1,q}+2\eta_{p,q}+\eta_{p-1,q})u_{p,q}+(\eta_{p,q}+\eta_{p-1,q})u_{p-1,q}\right] 
+	\end{multline}
+	
 	
 	
 	\bibliographystyle{ieeetr}
