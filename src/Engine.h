@@ -16,7 +16,10 @@
 */
 class Engine {
 public:
-    explicit Engine(const std::string &fileName);
+    /**
+     * @param inputFileName Name of the json input filename
+     */
+    explicit Engine(const std::string &inputFileName);
 
     /**
      * Run the actual simulation

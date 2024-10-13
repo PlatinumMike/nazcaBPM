@@ -1,5 +1,4 @@
 Todo items:
-- Implement Crank-Nickelson scheme and compare speed and accuracy against RK4.
 - Save also slices of the field at the beginning, middle, and end. For various directions. Add interpolation of the field so you can neatly save it at a given slice. And improve plotting.
 - Load mode field as initial profile, handle correct placement of the mode, and do the mode overlap at the output as well.
 - Compute mode fields inside the BPM itself.

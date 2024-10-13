@@ -13,10 +13,10 @@
 #include <chrono>
 
 
-Engine::Engine(const std::string &fileName) {
+Engine::Engine(const std::string &inputFileName) {
     std::cout << "Launching new engine now" << std::endl;
     //initialize
-    _inputs = Readers::readJSON(fileName);
+    _inputs = Readers::readJSON(inputFileName);
 
     std::cout << "Lx = " << _inputs.domain_len_x << ", Ly = " << _inputs.domain_len_y << ", Lz = " << _inputs.
             domain_len_z << std::endl;
@@ -44,7 +44,7 @@ void Engine::run() const {
 
 
     Solver solver(geometry, pmlx, pmly, gaussianSource, x_min, x_max, y_min, y_max, z_min, z_max, inputs.numx,
-                  inputs.numy, inputs.numz, inputs.scheme_parameter);
+                  inputs.numy, inputs.numz, inputs.scheme_parameter, inputs.k0, inputs.reference_index);
     solver.run();
     //todo: call function solver.save_data() or something to save/extract data after the solve is completed.
 }

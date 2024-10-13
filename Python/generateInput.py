@@ -56,12 +56,14 @@ dataDict = {
     "wl": 1.5,
     "resolution_x": 10,
     "resolution_y": 10,
+    "resolution_z": 10,
     "domain_len_x": 4.0,
     "domain_len_y": 6.0,
     "domain_len_z": taper_length + 30.0,
     "pml_strength": 5.0,
     "pml_thickness": 1.0,
     "shapes": shapes,
+    "scheme_parameter": 0.5,
 }
 
 # convert to JSON

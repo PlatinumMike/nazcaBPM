@@ -6,6 +6,7 @@
 #include "AuxiliaryFunctions.h"
 #include "IO/Readers.h"
 #include "IO/hdf_writer.h"
+#include "TriDiag.h"
 
 #include <cmath>
 #include <complex>
@@ -23,9 +24,10 @@ using boost::extents;
 
 Solver::Solver(const Geometry &geometry, const PML &pmlx, const PML &pmly, const ModeHandler &source, double xmin,
                double xmax, double ymin, double ymax, double zmin, double zmax, int numx, int numy,
-               int numz, const double scheme_parameter): xmin(xmin), xmax(xmax), ymin(ymin), ymax(ymax), zmin(zmin),
-                                                         zmax(zmax), numx(numx),
-                                                         numy(numy), numz(numz), scheme_parameter(scheme_parameter) {
+               int numz, const double scheme_parameter, double k0, double reference_index): xmin(xmin), xmax(xmax),
+    ymin(ymin), ymax(ymax), zmin(zmin),
+    zmax(zmax), numx(numx),
+    numy(numy), numz(numz), scheme_parameter(scheme_parameter), k0(k0), reference_index(reference_index) {
     geometryPtr = &geometry;
     pmlxPtr = &pmlx;
     pmlyPtr = &pmly;
@@ -50,25 +52,25 @@ void Solver::run() {
     write_cmplx_hdf5("initial_field.h5", field);
 
     //duming index on entire 3D grid into hdf5 using BOOST
-    // multi_array<double, 3> index_dataset(extents[numx][numy][numz]);
-    // for (int i = 0; i < numx; i++) {
-    //     for (int j = 0; j < numy; j++) {
-    //         for (int k = 0; k < numz; k++) {
-    //             index_dataset[i][j][k] = get_refractive_index(xgrid[i], ygrid[j], zgrid[k]);
-    //         }
-    //     }
-    // }
-    // auto xgrid_m = vector_to_multi_array(xgrid);
-    // auto ygrid_m = vector_to_multi_array(ygrid);
-    // auto zgrid_m = vector_to_multi_array(zgrid);
-    //
-    // // write to HDF5 format
-    // H5::H5File file("index_data.h5", H5F_ACC_TRUNC);
-    // write_hdf5(file, "refractive_index", index_dataset);
-    // write_hdf5(file, "xgrid", xgrid_m);
-    // write_hdf5(file, "ygrid", ygrid_m);
-    // write_hdf5(file, "zgrid", zgrid_m);
-    // file.close();
+    multi_array<double, 3> index_dataset(extents[numx][numy][numz]);
+    for (int i = 0; i < numx; i++) {
+        for (int j = 0; j < numy; j++) {
+            for (int k = 0; k < numz; k++) {
+                index_dataset[i][j][k] = get_refractive_index(xgrid[i], ygrid[j], zgrid[k]);
+            }
+        }
+    }
+    auto xgrid_m = vector_to_multi_array(xgrid);
+    auto ygrid_m = vector_to_multi_array(ygrid);
+    auto zgrid_m = vector_to_multi_array(zgrid);
+    
+    // write to HDF5 format
+    H5::H5File file("index_data.h5", H5F_ACC_TRUNC);
+    write_hdf5(file, "refractive_index", index_dataset);
+    write_hdf5(file, "xgrid", xgrid_m);
+    write_hdf5(file, "ygrid", ygrid_m);
+    write_hdf5(file, "zgrid", zgrid_m);
+    file.close();
 
     multi_array<std::complex<double>, 2> field_slice_yz(extents[numy][numz]);
     record_slice(field, field_slice_yz, 0);
@@ -80,7 +82,7 @@ void Solver::run() {
 
     const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     for (int z_step = 1; z_step < numz; z_step++) {
-        double current_z = zgrid[z_step - 1];
+        const double current_z = zgrid[z_step - 1];
         field = do_step_cn(field, xgrid, ygrid, current_z, dz);
         record_slice(field, field_slice_yz, z_step);
         //printing rough indication of simulation progress
@@ -120,96 +122,6 @@ double Solver::get_refractive_index(const double x_bpm, const double y_bpm, doub
     return geometryPtr->get_index(z_bpm, -y_bpm, x_bpm);
 }
 
-
-// multi_array<std::complex<double>, 2> Solver::get_derivative(const multi_array<std::complex<double>, 2> &field,
-//                                                             const std::vector<double> &xgrid,
-//                                                             const std::vector<double> &ygrid, double z) const {
-//     multi_array<std::complex<double>, 2> derivative(extents[numx][numy]);
-//     //update just the middle of the grid, because the boundary values will remain at zero. So set to zero once, then keep it there.
-//     std::complex<double> prefactor = {0.0, -0.5 / beta_ref};
-//     std::complex<double> qfactor_x_mid, qfactor_x_bottom, qfactor_x_top, qfactor_y_mid, qfactor_y_left, qfactor_y_right,
-//             field_mid, field_left, field_right, field_top, field_bottom;
-//     std::complex<double> value = {0.0, 0.0};
-//     const double dx = xgrid[1] - xgrid[0];
-//     const double dy = ygrid[1] - ygrid[0];
-//     double index;
-//     for (int idx = 0; idx < numx; idx++) {
-//         for (int idy = 0; idy < numy; idy++) {
-//             if (idx == 0 || idx == numx - 1 || idy == 0 || idy == numy - 1) {
-//                 derivative[idx][idy] = std::complex<double>{0.0, 0.0};
-//             } else {
-//                 index = get_refractive_index(xgrid[idx], ygrid[idy], z);
-//                 qfactor_x_mid = get_pml_factor1(xgrid[idx], ygrid[idy], z);
-//                 qfactor_x_bottom = get_pml_factor1(xgrid[idx - 1], ygrid[idy], z);
-//                 qfactor_x_top = get_pml_factor1(xgrid[idx + 1], ygrid[idy], z);
-//                 qfactor_y_mid = get_pml_factor2(xgrid[idx], ygrid[idy], z);
-//                 qfactor_y_left = get_pml_factor2(xgrid[idx], ygrid[idy - 1], z);
-//                 qfactor_y_right = get_pml_factor2(xgrid[idx], ygrid[idy + 1], z);
-//                 field_mid = field[idx][idy];
-//                 field_bottom = field[idx - 1][idy];
-//                 field_top = field[idx + 1][idy];
-//                 field_left = field[idx][idy - 1];
-//                 field_right = field[idx][idy + 1];
-//
-//                 //k0^2(n^2-n0^2)*u
-//                 value = k0 * k0 * (index * index - reference_index * reference_index) * field_mid;
-//                 //add Laplacian
-//                 value += qfactor_x_mid / (2.0 * dx * dx) * (
-//                     (qfactor_x_mid + qfactor_x_bottom) * field_bottom - (
-//                         qfactor_x_top + 2.0 * qfactor_x_mid + qfactor_x_bottom) * field_mid + (
-//                         qfactor_x_mid + qfactor_x_top) * field_top);
-//                 value += qfactor_y_mid / (2.0 * dy * dy) * (
-//                     (qfactor_y_mid + qfactor_y_left) * field_left - (
-//                         qfactor_y_right + 2.0 * qfactor_y_mid + qfactor_y_left) * field_mid + (
-//                         qfactor_y_mid + qfactor_y_right) * field_right);
-//
-//                 derivative[idx][idy] = prefactor * value;
-//             }
-//         }
-//     }
-//
-//     return derivative;
-// }
-
-// multi_array<std::complex<double>, 2> Engine::do_step_rk4(const multi_array<std::complex<double>, 2> &field,
-//                                                          const std::vector<double> &xgrid,
-//                                                          const std::vector<double> &ygrid, double z,
-//                                                          const double dz) const {
-//     //The RK4 method can be rewritten to use less memory. Initialize the new_field as a copy of the old_field.
-//     // Then compute k1, and add it to the new field. Also use it for k2, then deallocate k1. repeat for k2, k3, k4.
-//     multi_array<std::complex<double>, 2> new_field(extents[numx][numy]);
-//     multi_array<std::complex<double>, 2> temp_field(extents[numx][numy]);
-//     const multi_array<std::complex<double>, 2> k1 = get_derivative(field, xgrid, ygrid, z);
-//     for (int idx = 0; idx < numx; idx++) {
-//         for (int idy = 0; idy < numy; idy++) {
-//             temp_field[idx][idy] = field[idx][idy] + 0.5 * k1[idx][idy] * dz;
-//         }
-//     }
-//     const multi_array<std::complex<double>, 2> k2 = get_derivative(temp_field, xgrid, ygrid, z + 0.5 * dz);
-//     for (int idx = 0; idx < numx; idx++) {
-//         for (int idy = 0; idy < numy; idy++) {
-//             temp_field[idx][idy] = field[idx][idy] + 0.5 * k2[idx][idy] * dz;
-//         }
-//     }
-//     const multi_array<std::complex<double>, 2> k3 = get_derivative(temp_field, xgrid, ygrid, z + 0.5 * dz);
-//     for (int idx = 0; idx < numx; idx++) {
-//         for (int idy = 0; idy < numy; idy++) {
-//             temp_field[idx][idy] = field[idx][idy] + k3[idx][idy] * dz;
-//         }
-//     }
-//     const multi_array<std::complex<double>, 2> k4 = get_derivative(temp_field, xgrid, ygrid, z + dz);
-//
-//
-//     for (int idx = 0; idx < numx; idx++) {
-//         for (int idy = 0; idy < numy; idy++) {
-//             new_field[idx][idy] = field[idx][idy] + (
-//                                       k1[idx][idy] + 2.0 * k2[idx][idy] + 2.0 * k3[idx][idy] + k4[idx][idy]) * dz / 6.0;
-//         }
-//     }
-//
-//
-//     return new_field;
-// }
 
 void Solver::record_slice(const multi_array<std::complex<double>, 2> &buffer,
                           multi_array<std::complex<double>, 2> &storage, int idz) const {
@@ -273,9 +185,174 @@ multi_array<double, 1> Solver::vector_to_multi_array(const std::vector<double> &
     return vec_m;
 }
 
-multi_array<std::complex<double>, 2> Solver::do_step_cn(multi_array<std::complex<double>, 2> field,
-    std::vector<double> xgrid, std::vector<double> ygrid, double z, double dz) {
-    //todo
+// todo: error prone to skip over boundary points. off by one in the array indexing can easily occur.
+// suggested solution: include the boundary points in the matrix, but overrule that row, and rhs entry to force the solution to zero on the edges.
+// todo: also, a lot of code duplicatation here in do_step_cn, and get_rhs. Generalize, then clean up.
+multi_array<std::complex<double>, 2> Solver::do_step_cn(const multi_array<std::complex<double>, 2> &field,
+                                                        const std::vector<double> &xgrid,
+                                                        const std::vector<double> &ygrid, const double z,
+                                                        const double dz) {
+    const auto pre_factor = scheme_parameter * dz / (2.0 * k0 * reference_index) * std::complex<double>{0.0, 1.0};
+
+    //get RHS vector, store as multi-array.
+    auto rhs = get_rhs(field, xgrid, ygrid, z, dz);
+
+    //solver for half step field
+    multi_array<std::complex<double>, 2> half_step(extents[numx][numy]);
+    std::fill(half_step.data(), half_step.data() + half_step.num_elements(), 0.0);
+    //invert (1+...Gx) operator, so only coupling between neighbours in x direction, this means we have numy independent problems
+    for (int idy = 1; idy < numy - 1; idy++) {
+        // compute matrix entries
+        std::vector<std::complex<double> > lower_diag;
+        std::vector<std::complex<double> > diag;
+        std::vector<std::complex<double> > upper_diag;
+        std::vector<std::complex<double> > temp_rhs;
+        for (int idx = 1; idx < numx - 1; idx++) {
+            std::complex<double> entry_d = {1.0, 0.0};
+            std::complex<double> entry_ld = {0.0, 0.0};
+            std::complex<double> entry_ud = {0.0, 0.0};
+            const double y = ygrid[idy];
+            const double index_mid = get_refractive_index(xgrid[idx], y, z);
+            const double index_previous = get_refractive_index(xgrid[idx - 1], y, z);
+            const double index_next = get_refractive_index(xgrid[idx + 1], y, z);
+            auto pmlfactor_x_mid = pmlxPtr->get_pml_factor(xgrid[idx], y, z, index_mid);
+            auto pmlfactor_x_previous = pmlxPtr->get_pml_factor(xgrid[idx - 1], y, z, index_previous);
+            auto pmlfactor_x_next = pmlxPtr->get_pml_factor(xgrid[idx + 1], y, z, index_next);
+
+            entry_d += pre_factor * 0.5 * k0 * k0 * (index_mid * index_mid - reference_index * reference_index);
+            entry_d += -pre_factor * pmlfactor_x_mid / (2.0 * dx * dx) * (
+                pmlfactor_x_next + 2.0 * pmlfactor_x_mid + pmlfactor_x_previous);
+            entry_ld += pre_factor * pmlfactor_x_mid / (2.0 * dx * dx) * (pmlfactor_x_mid + pmlfactor_x_previous);
+            entry_ud += pre_factor * pmlfactor_x_mid / (2.0 * dx * dx) * (pmlfactor_x_mid + pmlfactor_x_next);
+
+            diag.push_back(entry_d);
+            temp_rhs.push_back(rhs[idx][idy]);
+            if (idx > 1) {
+                lower_diag.push_back(entry_ld);
+            }
+            if (idx < numx - 2) {
+                upper_diag.push_back(entry_ud);
+            }
+        }
+        //solve
+        auto solution = TriDiag<std::complex<double> >::solve_thomas(lower_diag, diag, upper_diag, temp_rhs);
+        //store into solution vector
+        for (int idx = 1; idx < numx - 1; idx++) {
+            half_step[idx][idy] = solution[idx];
+        }
+    }
+
+
+    // solve for next field value.
+    multi_array<std::complex<double>, 2> full_step(extents[numx][numy]);
+    std::fill(full_step.data(), full_step.data() + full_step.num_elements(), 0.0);
+    //invert (1+...Gy) operator, so only coupling between neighbours in y direction, this means we have numx independent problems
+    for (int idx = 1; idx < numx - 1; idx++) {
+        // compute matrix entries
+        std::vector<std::complex<double> > lower_diag;
+        std::vector<std::complex<double> > diag;
+        std::vector<std::complex<double> > upper_diag;
+        std::vector<std::complex<double> > temp_rhs;
+        for (int idy = 1; idy < numy - 1; idy++) {
+            std::complex<double> entry_d = {1.0, 0.0};
+            std::complex<double> entry_ld = {0.0, 0.0};
+            std::complex<double> entry_ud = {0.0, 0.0};
+            const double x = xgrid[idx];
+            const double index_mid = get_refractive_index(x, ygrid[idy], z);
+            const double index_previous = get_refractive_index(x, ygrid[idy - 1], z);
+            const double index_next = get_refractive_index(x, ygrid[idy + 1], z);
+            auto pmlfactor_y_mid = pmlxPtr->get_pml_factor(x, ygrid[idy], z, index_mid);
+            auto pmlfactor_y_previous = pmlxPtr->get_pml_factor(x, ygrid[idy - 1], z, index_previous);
+            auto pmlfactor_y_next = pmlxPtr->get_pml_factor(x, ygrid[idy + 1], z, index_next);
+
+            entry_d += pre_factor * 0.5 * k0 * k0 * (index_mid * index_mid - reference_index * reference_index);
+            entry_d += -pre_factor * pmlfactor_y_mid / (2.0 * dy * dy) * (
+                pmlfactor_y_next + 2.0 * pmlfactor_y_next + pmlfactor_y_previous);
+            entry_ld += pre_factor * pmlfactor_y_mid / (2.0 * dy * dy) * (pmlfactor_y_mid + pmlfactor_y_previous);
+            entry_ud += pre_factor * pmlfactor_y_mid / (2.0 * dy * dy) * (pmlfactor_y_mid + pmlfactor_y_next);
+
+            diag.push_back(entry_d);
+            temp_rhs.push_back(half_step[idx][idy]);
+            if (idy > 1) {
+                lower_diag.push_back(entry_ld);
+            }
+            if (idy < numy - 2) {
+                upper_diag.push_back(entry_ud);
+            }
+        }
+        //solve
+        auto solution = TriDiag<std::complex<double> >::solve_thomas(lower_diag, diag, upper_diag, temp_rhs);
+        //store into solution vector
+        for (int idy = 1; idy < numy - 1; idy++) {
+            full_step[idx][idy] = solution[idx];
+        }
+    }
+    return full_step;
+}
+
+multi_array<std::complex<double>, 2> Solver::get_rhs(const multi_array<std::complex<double>, 2> &field,
+                                                     const std::vector<double> &xgrid, const std::vector<double> &ygrid,
+                                                     const double z, const double dz) const {
+    const std::complex<double> pre_factor = (scheme_parameter - 1.0) * dz / (2.0 * k0 * reference_index) * std::complex<
+                                                double>
+                                            {0.0, 1.0};
+    //right hand side vector, make deep copy
+    multi_array<std::complex<double>, 2> rhs1 = field;
+    // apply the operator (1-...Gy)
+    for (int i = 0; i < numx; i++) {
+        for (int j = 0; j < numy; j++) {
+            if (i == 0 || j == 0 || i == numx - 1 || j == numy - 1) {
+                //ignore boundary values.
+                rhs1[i][j] = std::complex<double>{0.0, 0.0};
+            } else {
+                // add Gy operator.
+                const double x = xgrid[i];
+                const double index_mid = get_refractive_index(x, ygrid[j], z);
+                const double index_previous = get_refractive_index(x, ygrid[j - 1], z);
+                const double index_next = get_refractive_index(x, ygrid[j + 1], z);
+                auto pmlfactor_y_mid = pmlyPtr->get_pml_factor(x, ygrid[j], z, index_mid);
+                auto pmlfactor_y_previous = pmlyPtr->get_pml_factor(x, ygrid[j - 1], z, index_previous);
+                auto pmlfactor_y_next = pmlyPtr->get_pml_factor(x, ygrid[j + 1], z, index_next);
+                // add index contribution
+                rhs1[i][j] += pre_factor * 0.5 * k0 * k0 * (index_mid * index_mid - reference_index * reference_index) *
+                        field[i][j];
+                // add double derivative contribution
+                rhs1[i][j] += pre_factor * pmlfactor_y_mid / (2.0 * dy * dy) * (
+                    (pmlfactor_y_mid + pmlfactor_y_next) * field[i][j + 1] - (
+                        pmlfactor_y_next + 2.0 * pmlfactor_y_mid + pmlfactor_y_previous) * field[i][j] + (
+                        pmlfactor_y_mid + pmlfactor_y_previous) * field[i][j - 1]);
+            }
+        }
+    }
+    //now apply the operator (1-...Gx)
+    multi_array<std::complex<double>, 2> rhs2 = rhs1;
+    for (int i = 0; i < numx; i++) {
+        for (int j = 0; j < numy; j++) {
+            if (i == 0 || j == 0 || i == numx - 1 || j == numy - 1) {
+                //ignore boundary values.
+                rhs2[i][j] = std::complex<double>{0.0, 0.0};
+            } else {
+                // add Gx operator.
+                const double y = ygrid[j];
+                const double index_mid = get_refractive_index(xgrid[i], y, z);
+                const double index_previous = get_refractive_index(xgrid[i - 1], y, z);
+                const double index_next = get_refractive_index(xgrid[i + 1], y, z);
+                auto pmlfactor_x_mid = pmlxPtr->get_pml_factor(xgrid[i], y, z, index_mid);
+                auto pmlfactor_x_previous = pmlxPtr->get_pml_factor(xgrid[i - 1], y, z, index_previous);
+                auto pmlfactor_x_next = pmlxPtr->get_pml_factor(xgrid[i + 1], y, z, index_next);
+                // add index contribution
+                rhs2[i][j] += pre_factor * 0.5 * k0 * k0 * (index_mid * index_mid - reference_index * reference_index) *
+                        rhs1[
+                            i][j];
+                // add double derivative contribution
+                rhs2[i][j] += pre_factor * pmlfactor_x_mid / (2.0 * dx * dx) * (
+                    (pmlfactor_x_mid + pmlfactor_x_next) * rhs1[i + 1][j] - (
+                        pmlfactor_x_next + 2.0 * pmlfactor_x_mid + pmlfactor_x_previous) * rhs1[i][j] + (
+                        pmlfactor_x_mid + pmlfactor_x_previous) * rhs1[i - 1][j]);
+            }
+        }
+    }
+    return rhs2;
 }
 
 

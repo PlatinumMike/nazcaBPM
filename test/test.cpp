@@ -29,7 +29,7 @@ TEST_CASE("Tri-diagonal matrix solve") {
                      i + 1];
     }
 
-    solution_thomas = TriDiag::solve_thomas(lower, diagonal, upper, rhs);
+    solution_thomas = TriDiag<double>::solve_thomas(lower, diagonal, upper, rhs);
 
     double rms_error = 0.0;
     for (size_t i = 0; i < size; i++) {

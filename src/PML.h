@@ -21,7 +21,7 @@ public:
      * @param pml_index refractive index at the point (x,y,z). Just choose this equal to the index value of the underlying medium.
      * @return
      */
-    std::complex<double> get_pml_factor(double x, double y, double z, double pml_index) const;
+    [[nodiscard]] std::complex<double> get_pml_factor(double x, double y, double z, double pml_index) const;
 
 private:
     double pml_thickness;
@@ -30,10 +30,10 @@ private:
     double x_max; //max coordinate value.
 
     //get conductivity for the pml, in units of omega*eps0
-    double get_conductivity(double x) const;
+    [[nodiscard]] double get_conductivity(double x) const;
 
     // helper function to get the conductivity
-    double get_conductivity_base(double x, double xmin, double xmax) const;
+    [[nodiscard]] double get_conductivity_base(double x, double xmin, double xmax) const;
 };
 
 
