@@ -71,13 +71,34 @@ private:
      * @param dz step size in propagation direction
      * @return new field value
      */
-    multi_array<std::complex<double>, 2> do_step_cn(const multi_array<std::complex<double>, 2>& field,
-                                                    const std::vector<double>& xgrid, const std::vector<double>& ygrid, double z,
+    multi_array<std::complex<double>, 2> do_step_cn(const multi_array<std::complex<double>, 2> &field,
+                                                    const std::vector<double> &xgrid, const std::vector<double> &ygrid,
+                                                    double z,
                                                     double dz);
 
     multi_array<std::complex<double>, 2> get_rhs(const multi_array<std::complex<double>, 2> &field,
                                                  const std::vector<double> &xgrid,
                                                  const std::vector<double> &ygrid, double z, double dz) const;
+
+    //applies the operator (1+prefactorGx) or (1+prefactorGy). You can decide which one to do based on the neighbor values you pass into the function.
+    std::complex<double> apply_right_hand_operator(double xmid, double xneighbor_previous, double xneighbor_next,
+                                                   double ymid,
+                                                   double yneighbor_previous, double yneighbor_next,
+                                                   double neighbor_distance,
+                                                   double z,
+                                                   std::complex<double> preFactor,
+                                                   std::complex<double> fieldValueMid,
+                                                   std::complex<double> fieldValue_previous,
+                                                   std::complex<double> fieldValue_next, const PML *pmlPtr) const;
+
+    std::vector<std::complex<double> > solve_system(const std::vector<double> &xmid, const std::vector<double> &xneighbor_previous,
+                                                    const std::vector<double> &xneighbor_next,
+                                                    const std::vector<double> &ymid, const std::vector<double> &yneighbor_previous,
+                                                    const std::vector<double> &yneighbor_next,
+                                                    double neighbor_distance,
+                                                    double z, std::complex<double> preFactor,
+                                                    const std::vector<std::complex<double> > &rhs_slice,
+                                                    const PML *pmlPtr) const;
 };
 
 
