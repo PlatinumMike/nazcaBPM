@@ -40,6 +40,9 @@ target_link_libraries(${EXENAME} PRIVATE Boost::boost)
 if (ENABLE_TEST)
     add_executable(testSuite.x test/test.cpp src/TriDiag.h src/Polygon.cpp src/Polygon.h src/AuxiliaryFunctions.cpp src/AuxiliaryFunctions.h src/Geometry.cpp src/Geometry.h
             src/GridInterpolator.cpp
-            src/GridInterpolator.h)
+            src/GridInterpolator.h
+            src/PML.cpp
+            src/PML.h
+    )
 endif ()
 

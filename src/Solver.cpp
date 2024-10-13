@@ -51,6 +51,9 @@ void Solver::run() {
 
     write_cmplx_hdf5("initial_field.h5", field);
 
+    //todo: make this optional, it is costing too much disk space.
+    // also add a slice in the xz plane for the index and field.
+    // and add the grid information to the field output files. This is a negligible overhead anyway, since the grid is 1D but the field is 2D.
     //duming index on entire 3D grid into hdf5 using BOOST
     multi_array<double, 3> index_dataset(extents[numx][numy][numz]);
     for (int i = 0; i < numx; i++) {
@@ -353,11 +356,11 @@ std::vector<std::complex<double> > Solver::solve_system(const std::vector<double
                                                         const PML *pmlPtr) const {
     const auto size = rhs_slice.size();
     // compute matrix entries
-    std::vector<std::complex<double> > lower_diag(size - 3);
-    std::vector<std::complex<double> > diag(size - 2);
-    std::vector<std::complex<double> > upper_diag(size - 3);
-    std::vector<std::complex<double> > temp_rhs(size - 2);
-    for (auto idx = 1; idx < size - 1; idx++) {
+    std::vector<std::complex<double> > lower_diag(size - 1);
+    std::vector<std::complex<double> > diag(size);
+    std::vector<std::complex<double> > upper_diag(size - 1);
+    std::vector<std::complex<double> > temp_rhs = rhs_slice;
+    for (auto idx = 0; idx < size; idx++) {
         const double index_mid = get_refractive_index(xmid[idx], ymid[idx], z);
         const double index_previous = get_refractive_index(xneighbor_previous[idx], yneighbor_previous[idx], z);
         const double index_next = get_refractive_index(xneighbor_next[idx], yneighbor_next[idx], z);
@@ -368,14 +371,13 @@ std::vector<std::complex<double> > Solver::solve_system(const std::vector<double
                 preFactor * pmlfactor_mid / (2.0 * neighbor_distance * neighbor_distance);
 
 
-        diag[idx - 1] = 1.0 + preFactor * 0.5 * k0 * k0 * (index_mid * index_mid - reference_index * reference_index)
-                        - coefficient * (pmlfactor_next + 2.0 * pmlfactor_mid + pmlfactor_previous);
-        temp_rhs[idx - 1] = rhs_slice[idx];
+        diag[idx] = 1.0 + preFactor * 0.5 * k0 * k0 * (index_mid * index_mid - reference_index * reference_index)
+                    - coefficient * (pmlfactor_next + 2.0 * pmlfactor_mid + pmlfactor_previous);
         if (idx > 1) {
-            lower_diag[idx - 2] = coefficient * (pmlfactor_mid + pmlfactor_previous);
+            lower_diag[idx - 1] = coefficient * (pmlfactor_mid + pmlfactor_previous);
         }
-        if (idx < size - 2) {
-            upper_diag[idx - 1] = coefficient * (pmlfactor_mid + pmlfactor_next);
+        if (idx < size - 1) {
+            upper_diag[idx] = coefficient * (pmlfactor_mid + pmlfactor_next);
         }
     }
     //solve
