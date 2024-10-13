@@ -74,7 +74,7 @@ private:
     multi_array<std::complex<double>, 2> do_step_cn(const multi_array<std::complex<double>, 2> &field,
                                                     const std::vector<double> &xgrid, const std::vector<double> &ygrid,
                                                     double z,
-                                                    double dz);
+                                                    double dz) const;
 
     multi_array<std::complex<double>, 2> get_rhs(const multi_array<std::complex<double>, 2> &field,
                                                  const std::vector<double> &xgrid,

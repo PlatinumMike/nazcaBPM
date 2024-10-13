@@ -6,6 +6,7 @@
 #include "../src/AuxiliaryFunctions.h"
 #include "../src/Geometry.h"
 #include "../src/GridInterpolator.h"
+#include "../src/PML.h"
 #include <cmath>
 #include <boost/multi_array.hpp>
 
@@ -144,4 +145,19 @@ TEST_CASE("Check grid interpolation") {
 
     // internal point which happens to be exactly on a grid point.
     CHECK(grid_interpolator.get_value(-2.4, 1.0/3.0)==doctest::Approx(25.18));
+}
+
+TEST_CASE("Check PML") {
+    PML pml(1.5, 4.0, 0.0, 10.0);
+    double index = 2.0;
+
+    CHECK(pml.get_conductivity(0.0)==4.0);
+    CHECK(pml.get_conductivity(10.0)==4.0);
+    CHECK(pml.get_conductivity(1.5)==0.0);
+    CHECK(pml.get_conductivity(8.5)==0.0);
+    CHECK(pml.get_conductivity(9.0)==4.0/9.0);
+
+    CHECK(pml.get_pml_factor(5.0,index)==std::complex<double>{1.0, 0.0});
+    CHECK(pml.get_pml_factor(9.0,index)==std::complex<double>{0.9878048780487805, 0.1097560975609756});
+    CHECK(pml.get_pml_factor(10.0,index)==std::complex<double>{0.5, 0.5});
 }

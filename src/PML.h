@@ -11,29 +11,33 @@
 
 class PML {
 public:
+    /**
+     * creates a PML object that defines a PML near xmin and xmax.
+     * E.g. if the x domain spans [0,10], and the thickness is 1, a PML will be applied from 0 to 1, and 9 to 10.
+     * The conductivity profile is zero at the entrance of the PML and ramps up parabolically towards the domain boundaries.
+     * @param thickness PML thickness in length units
+     * @param strength PML strength in units of omega*eps0
+     * @param xmin min coordinate value of the domain.
+     * @param xmax max coordinate value of the domain.
+     */
     PML(double thickness, double strength, double xmin, double xmax);
 
     /**
      * correction term to describe PML
-     * @param x coordinate x
-     * @param y coordinate y
-     * @param z coordinate z
-     * @param pml_index refractive index at the point (x,y,z). Just choose this equal to the index value of the underlying medium.
+     * @param x coordinate normal to the PML.
+     * @param pml_index refractive index at the point of interest. Just choose this equal to the index value of the underlying medium.
      * @return
      */
-    [[nodiscard]] std::complex<double> get_pml_factor(double x, double y, double z, double pml_index) const;
+    [[nodiscard]] std::complex<double> get_pml_factor(double x, double pml_index) const;
+
+    //get conductivity for the pml, in units of omega*eps0
+    [[nodiscard]] double get_conductivity(double x) const;
 
 private:
     double pml_thickness;
     double pml_strength;
     double x_min; //minimal coordinate value. Writen as x here, but it can represent any of the (x,y,z) coordinates.
     double x_max; //max coordinate value.
-
-    //get conductivity for the pml, in units of omega*eps0
-    [[nodiscard]] double get_conductivity(double x) const;
-
-    // helper function to get the conductivity
-    [[nodiscard]] double get_conductivity_base(double x, double xmin, double xmax) const;
 };
 
 
