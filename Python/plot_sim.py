@@ -13,77 +13,93 @@ import matplotlib.pyplot as plt
 import h5py
 
 
-def get_index(filename: str):
+def get_index(filename: str, grid1: str, grid2: str):
     f = h5py.File(filename, "r")
     index = f["refractive_index"][:]
+    _grid1 = f[grid1][:]
+    _grid2 = f[grid2][:]
+    data = {"index": index, grid1: _grid1, grid2: _grid2}
     f.close()
-    return index
+    return data
 
 
-def get_field(filename: str):
+def get_field(filename: str, grid1: str, grid2: str):
     f = h5py.File(filename, "r")
     real = f["real"][:]
     imag = f["imag"][:]
+    _grid1 = f[grid1][:]
+    _grid2 = f[grid2][:]
     f.close()
-    return real + 1.0j * imag
+    data = {"field": real + 1.0j * imag, grid1: _grid1, grid2: _grid2}
+    return data
 
 
 # %% load files
+field_start = get_field("../build/field_start.h5", "xgrid", "ygrid")
+field_end = get_field("../build/field_end.h5", "xgrid", "ygrid")
+field_yz = get_field("../build/field_yz.h5", "ygrid", "zgrid")
+field_xz = get_field("../build/field_xz.h5", "xgrid", "zgrid")
 
-filename = "../build/index_data.h5"
-
-
-f = h5py.File(filename, "r")
-
-x = f["xgrid"][:]
-y = f["ygrid"][:]
-z = f["zgrid"][:]
-index3d = f["refractive_index"][:]
-
-f.close()
-
-
-index_start = get_index("../build/index_start.h5")
-index_end = get_index("../build/index_end.h5")
-index_cross = get_index("../build/index_cross.h5")
-field_slice = get_field("../build/field_slice.h5")
-final_field = get_field("../build/final_field.h5")
-initial_field = get_field("../build/initial_field.h5")
+index_start = get_index("../build/index_start.h5", "xgrid", "ygrid")
+index_end = get_index("../build/index_end.h5", "xgrid", "ygrid")
+index_xz = get_index("../build/index_xz.h5", "xgrid", "zgrid")
+index_yz = get_index("../build/index_yz.h5", "ygrid", "zgrid")
 
 # %% plotting
 
 plt.figure()
-plt.contourf(y, x, initial_field.real, 20)
+plt.contourf(field_start["ygrid"], field_start["xgrid"], field_start["field"].real, 20)
 plt.xlabel("y")
 plt.ylabel("x")
 plt.show()
 
 plt.figure()
-plt.contourf(y, x, final_field.real, 20)
+plt.contourf(field_end["ygrid"], field_end["xgrid"], field_end["field"].real, 20)
 plt.xlabel("y")
 plt.ylabel("x")
 plt.show()
 
-intensity = np.abs(field_slice) ** 2
+intensity_yz = np.abs(field_yz["field"]) ** 2
+intensity_xz = np.abs(field_xz["field"]) ** 2
 
 # warning, the y direction is mirrored, because ymin is at the top, ymax at the bottom.
 plt.figure()
-plt.contourf(z, y, intensity, 20, cmap="inferno")
+plt.contourf(field_yz["zgrid"], field_yz["ygrid"], intensity_yz, 20, cmap="inferno")
 plt.xlabel("z")
 plt.ylabel("y")
 plt.show()
 
+plt.figure()
+plt.contourf(field_xz["zgrid"], field_xz["xgrid"], intensity_xz, 20, cmap="inferno")
+plt.xlabel("z")
+plt.ylabel("x")
+plt.show()
+
 
 plt.figure()
-plt.contourf(y, x, index_end)
+plt.contourf(index_end["ygrid"], index_end["xgrid"], index_end["index"])
 plt.xlabel("y")
 plt.ylabel("x")
 plt.colorbar()
 plt.show()
 
 plt.figure()
-plt.contourf(z, y, index_cross)
+plt.contourf(index_start["ygrid"], index_start["xgrid"], index_start["index"])
+plt.xlabel("y")
+plt.ylabel("x")
+plt.colorbar()
+plt.show()
+
+plt.figure()
+plt.contourf(index_yz["zgrid"], index_yz["ygrid"], index_yz["index"])
 plt.xlabel("z")
 plt.ylabel("y")
+plt.colorbar()
+plt.show()
+
+plt.figure()
+plt.contourf(index_xz["zgrid"], index_xz["xgrid"], index_xz["index"])
+plt.xlabel("z")
+plt.ylabel("x")
 plt.colorbar()
 plt.show()

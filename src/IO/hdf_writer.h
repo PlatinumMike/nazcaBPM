@@ -78,9 +78,10 @@ void write_hdf5(H5::H5File file, const std::string& data_set_name, const boost::
 }
 
 inline void write_cmplx_hdf5(const std::string &filename,
-                             const boost::multi_array<std::complex<double>, 2> &data) {
-    auto nx = static_cast<int>(data.shape()[0]);
-    auto ny = static_cast<int>(data.shape()[1]);
+                             const boost::multi_array<std::complex<double>, 2> &data, const multi_array<double,1>& grid1,
+                             const multi_array<double,1>& grid2, const char direction) {
+    const auto nx = static_cast<int>(data.shape()[0]);
+    const auto ny = static_cast<int>(data.shape()[1]);
 
     multi_array<double, 2> data_real(boost::extents[nx][ny]);
     multi_array<double, 2> data_imag(boost::extents[nx][ny]);
@@ -90,9 +91,24 @@ inline void write_cmplx_hdf5(const std::string &filename,
             data_imag[i][j] = data[i][j].imag();
         }
     }
+    std::string label1 = "grid1";
+    std::string label2 = "grid2";
+    if (direction == 'x') {
+        label1 = "ygrid";
+        label2 = "zgrid";
+    } else if (direction == 'y') {
+        label1 = "xgrid";
+        label2 = "zgrid";
+    } else {
+        label1 = "xgrid";
+        label2 = "ygrid";
+    }
+
     H5::H5File file(filename, H5F_ACC_TRUNC);
     write_hdf5(file, "real", data_real);
     write_hdf5(file, "imag", data_imag);
+    write_hdf5(file, label1, grid1);
+    write_hdf5(file, label2, grid2);
     file.close();
 }
 

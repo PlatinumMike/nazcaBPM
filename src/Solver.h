@@ -53,7 +53,7 @@ private:
     [[nodiscard]] double get_refractive_index(double x, double y, double z) const;
 
     void record_slice(const multi_array<std::complex<double>, 2> &buffer,
-                      multi_array<std::complex<double>, 2> &storage, int idz) const;
+                      multi_array<std::complex<double>, 2> &storage, int idz, bool slice_x) const;
 
     void dump_index_slice(const std::string &filename, char direction, double slice_position,
                           const std::vector<double> &grid_coordinate1,
@@ -61,7 +61,6 @@ private:
 
     multi_array<double, 1> vector_to_multi_array(const std::vector<double> &vec) const;
 
-    // one step with the Crank-Nicolson scheme
     /**
      * Do one step in propagation direction with the Crank-Nicolson scheme
      * @param field old field value. This value is not modified.
@@ -91,9 +90,11 @@ private:
                                                    std::complex<double> fieldValue_previous,
                                                    std::complex<double> fieldValue_next, const PML *pmlPtr) const;
 
-    std::vector<std::complex<double> > solve_system(const std::vector<double> &xmid, const std::vector<double> &xneighbor_previous,
+    std::vector<std::complex<double> > solve_system(const std::vector<double> &xmid,
+                                                    const std::vector<double> &xneighbor_previous,
                                                     const std::vector<double> &xneighbor_next,
-                                                    const std::vector<double> &ymid, const std::vector<double> &yneighbor_previous,
+                                                    const std::vector<double> &ymid,
+                                                    const std::vector<double> &yneighbor_previous,
                                                     const std::vector<double> &yneighbor_next,
                                                     double neighbor_distance,
                                                     double z, std::complex<double> preFactor,

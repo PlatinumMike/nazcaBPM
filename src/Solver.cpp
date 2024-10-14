@@ -42,41 +42,24 @@ void Solver::run() {
     dy = ygrid[1] - ygrid[0];
     dz = zgrid[1] - zgrid[0];
 
-    dump_index_slice("index_start.h5", 'z', 0.0, xgrid, ygrid);
-    dump_index_slice("index_end.h5", 'z', zgrid[numz - 1], xgrid, ygrid);
-    dump_index_slice("index_cross.h5", 'x', 0.0, ygrid, zgrid);
-
-    //define field in current slice to be "field". Since it is a scalar BPM there is no polarization.
-    multi_array<std::complex<double>, 2> field = sourcePtr->get_initial_profile(xgrid, ygrid, 0.0, 0.0, 1.0, 1.0);
-
-    write_cmplx_hdf5("initial_field.h5", field);
-
-    //todo: make this optional, it is costing too much disk space.
-    // also add a slice in the xz plane for the index and field.
-    // and add the grid information to the field output files. This is a negligible overhead anyway, since the grid is 1D but the field is 2D.
-    //duming index on entire 3D grid into hdf5 using BOOST
-    multi_array<double, 3> index_dataset(extents[numx][numy][numz]);
-    for (int i = 0; i < numx; i++) {
-        for (int j = 0; j < numy; j++) {
-            for (int k = 0; k < numz; k++) {
-                index_dataset[i][j][k] = get_refractive_index(xgrid[i], ygrid[j], zgrid[k]);
-            }
-        }
-    }
     auto xgrid_m = vector_to_multi_array(xgrid);
     auto ygrid_m = vector_to_multi_array(ygrid);
     auto zgrid_m = vector_to_multi_array(zgrid);
 
-    // write to HDF5 format
-    H5::H5File file("index_data.h5", H5F_ACC_TRUNC);
-    write_hdf5(file, "refractive_index", index_dataset);
-    write_hdf5(file, "xgrid", xgrid_m);
-    write_hdf5(file, "ygrid", ygrid_m);
-    write_hdf5(file, "zgrid", zgrid_m);
-    file.close();
+    dump_index_slice("index_start.h5", 'z', 0.0, xgrid, ygrid);
+    dump_index_slice("index_end.h5", 'z', zgrid[numz - 1], xgrid, ygrid);
+    dump_index_slice("index_yz.h5", 'x', 0.0, ygrid, zgrid);
+    dump_index_slice("index_xz.h5", 'y', 0.0, xgrid, zgrid);
+
+    //define field in current slice to be "field". Since it is a scalar BPM there is no polarization.
+    multi_array<std::complex<double>, 2> field = sourcePtr->get_initial_profile(xgrid, ygrid, 0.0, 0.0, 1.0, 1.0);
+
+    write_cmplx_hdf5("field_start.h5", field, xgrid_m, ygrid_m, 'z');
 
     multi_array<std::complex<double>, 2> field_slice_yz(extents[numy][numz]);
-    record_slice(field, field_slice_yz, 0);
+    multi_array<std::complex<double>, 2> field_slice_xz(extents[numx][numz]);
+    record_slice(field, field_slice_yz, 0, true);
+    record_slice(field, field_slice_xz, 0, false);
 
 
     const int index_1percent = numz / 100;
@@ -87,7 +70,8 @@ void Solver::run() {
     for (int z_step = 1; z_step < numz; z_step++) {
         const double current_z = zgrid[z_step - 1];
         field = do_step_cn(field, xgrid, ygrid, current_z, dz);
-        record_slice(field, field_slice_yz, z_step);
+        record_slice(field, field_slice_yz, z_step, true);
+        record_slice(field, field_slice_xz, z_step, false);
         //printing rough indication of simulation progress
         if (z_step == index_1percent) {
             std::cout << "1% reached" << std::endl;
@@ -116,8 +100,9 @@ void Solver::run() {
     auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
     std::cout << "Elapsed time = " << delta << " (s)" << std::endl;
 
-    write_cmplx_hdf5("final_field.h5", field);
-    write_cmplx_hdf5("field_slice.h5", field_slice_yz);
+    write_cmplx_hdf5("field_end.h5", field, xgrid_m, ygrid_m, 'z');
+    write_cmplx_hdf5("field_xz.h5", field_slice_xz, xgrid_m, zgrid_m, 'y');
+    write_cmplx_hdf5("field_yz.h5", field_slice_yz, ygrid_m, zgrid_m, 'x');
 }
 
 double Solver::get_refractive_index(const double x_bpm, const double y_bpm, double z_bpm) const {
@@ -127,10 +112,17 @@ double Solver::get_refractive_index(const double x_bpm, const double y_bpm, doub
 
 
 void Solver::record_slice(const multi_array<std::complex<double>, 2> &buffer,
-                          multi_array<std::complex<double>, 2> &storage, int idz) const {
-    const int index_xmid = numx / 2; //yz slice at x=0 approximately
-    for (int idy = 0; idy < numy; idy++) {
-        storage[idy][idz] = buffer[index_xmid][idy];
+                          multi_array<std::complex<double>, 2> &storage, const int idz, const bool slice_x) const {
+    if (slice_x) {
+        const int index_xmid = numx / 2; //yz slice at x=0 approximately
+        for (int idy = 0; idy < numy; idy++) {
+            storage[idy][idz] = buffer[index_xmid][idy];
+        }
+    } else {
+        const int index_ymid = numy / 2; //xz slice at y=0 approximately
+        for (int idx = 0; idx < numx; idx++) {
+            storage[idx][idz] = buffer[idx][index_ymid];
+        }
     }
 }
 
@@ -197,6 +189,7 @@ multi_array<std::complex<double>, 2> Solver::do_step_cn(const multi_array<std::c
                                                         const double dz) const {
     //get RHS vector, store as multi-array.
     auto rhs = get_rhs(field, xgrid, ygrid, z, dz);
+
 
     const auto pre_factor = scheme_parameter * dz / (2.0 * k0 * reference_index) * std::complex<double>{0.0, 1.0};
 
