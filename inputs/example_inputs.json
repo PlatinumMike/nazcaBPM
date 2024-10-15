@@ -1,13 +1,13 @@
 {
   "background_index": 1.5,
-  "domain_len_x": 4.0,
-  "domain_len_y": 6.0,
+  "domain_len_x": 8.0,
+  "domain_len_y": 8.0,
   "domain_len_z": 40.0,
   "pml_strength": 5.0,
   "pml_thickness": 1.0,
   "reference_index": 1.6,
-  "resolution_x": 10,
-  "resolution_y": 10,
+  "resolution_x": 30,
+  "resolution_y": 30,
   "resolution_z": 10,
   "scheme_parameter": 0.5,
   "shapes": [

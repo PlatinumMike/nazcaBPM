@@ -30,7 +30,9 @@ add_executable(${EXENAME} src/main.cpp
         src/PML.cpp
         src/PML.h
         src/ModeHandler.cpp
-        src/ModeHandler.h)
+        src/ModeHandler.h
+        src/OperatorSuite.cpp
+        src/OperatorSuite.h)
 
 target_link_libraries(${EXENAME} PRIVATE HDF5::HDF5)
 target_link_libraries(${EXENAME} PRIVATE Boost::boost)
@@ -43,6 +45,8 @@ if (ENABLE_TEST)
             src/GridInterpolator.h
             src/PML.cpp
             src/PML.h
+            src/OperatorSuite.cpp
+            src/OperatorSuite.h
     )
 endif ()
 

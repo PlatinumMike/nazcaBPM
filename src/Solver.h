@@ -50,7 +50,7 @@ private:
     const PML *pmlyPtr;
     const ModeHandler *sourcePtr;
 
-    [[nodiscard]] double get_refractive_index(double x, double y, double z) const;
+    [[nodiscard]] double get_refractive_index(double x_bpm, double y_bpm, double z_bpm) const;
 
     void record_slice(const multi_array<std::complex<double>, 2> &buffer,
                       multi_array<std::complex<double>, 2> &storage, int idz, bool slice_x) const;
@@ -59,7 +59,7 @@ private:
                           const std::vector<double> &grid_coordinate1,
                           const std::vector<double> &grid_coordinate2) const;
 
-    multi_array<double, 1> vector_to_multi_array(const std::vector<double> &vec) const;
+    static multi_array<double, 1> vector_to_multi_array(const std::vector<double> &vec) ;
 
     /**
      * Do one step in propagation direction with the Crank-Nicolson scheme
@@ -74,32 +74,6 @@ private:
                                                     const std::vector<double> &xgrid, const std::vector<double> &ygrid,
                                                     double z,
                                                     double dz) const;
-
-    multi_array<std::complex<double>, 2> get_rhs(const multi_array<std::complex<double>, 2> &field,
-                                                 const std::vector<double> &xgrid,
-                                                 const std::vector<double> &ygrid, double z, double dz) const;
-
-    //applies the operator (1+prefactorGx) or (1+prefactorGy). You can decide which one to do based on the neighbor values you pass into the function.
-    std::complex<double> apply_right_hand_operator(double xmid, double xneighbor_previous, double xneighbor_next,
-                                                   double ymid,
-                                                   double yneighbor_previous, double yneighbor_next,
-                                                   double neighbor_distance,
-                                                   double z,
-                                                   std::complex<double> preFactor,
-                                                   std::complex<double> fieldValueMid,
-                                                   std::complex<double> fieldValue_previous,
-                                                   std::complex<double> fieldValue_next, const PML *pmlPtr) const;
-
-    std::vector<std::complex<double> > solve_system(const std::vector<double> &xmid,
-                                                    const std::vector<double> &xneighbor_previous,
-                                                    const std::vector<double> &xneighbor_next,
-                                                    const std::vector<double> &ymid,
-                                                    const std::vector<double> &yneighbor_previous,
-                                                    const std::vector<double> &yneighbor_next,
-                                                    double neighbor_distance,
-                                                    double z, std::complex<double> preFactor,
-                                                    const std::vector<std::complex<double> > &rhs_slice,
-                                                    const PML *pmlPtr) const;
 };
 
 

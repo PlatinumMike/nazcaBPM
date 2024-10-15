@@ -26,9 +26,18 @@ public:
      * correction term to describe PML
      * @param x coordinate normal to the PML.
      * @param pml_index refractive index at the point of interest. Just choose this equal to the index value of the underlying medium.
-     * @return
+     * @return pml factor
      */
     [[nodiscard]] std::complex<double> get_pml_factor(double x, double pml_index) const;
+
+    /**
+     * Derivative w.r.t. x of correction term to describe PML
+     * not to be used in the simulation, this is purely for testing purposes.
+     * @param x coordinate normal to the PML.
+     * @param pml_index refractive index at the point of interest. Just choose this equal to the index value of the underlying medium.
+     * @return derivative of pml factor
+     */
+    [[nodiscard]] std::complex<double> get_pml_factor_derivative(double x, double pml_index) const;
 
     //get conductivity for the pml, in units of omega*eps0
     [[nodiscard]] double get_conductivity(double x) const;
@@ -38,7 +47,9 @@ private:
     double pml_strength;
     double x_min; //minimal coordinate value. Writen as x here, but it can represent any of the (x,y,z) coordinates.
     double x_max; //max coordinate value.
-};
 
+    //get dervivative of conductivity for the pml, w.r.t. x.
+    [[nodiscard]] double get_conductivity_derivative(double x) const;
+};
 
 #endif //PML_H

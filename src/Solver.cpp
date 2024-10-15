@@ -6,7 +6,7 @@
 #include "AuxiliaryFunctions.h"
 #include "IO/Readers.h"
 #include "IO/hdf_writer.h"
-#include "TriDiag.h"
+#include "OperatorSuite.h"
 
 #include <cmath>
 #include <complex>
@@ -171,7 +171,7 @@ void Solver::dump_index_slice(const std::string &filename, const char direction,
     file.close();
 }
 
-multi_array<double, 1> Solver::vector_to_multi_array(const std::vector<double> &vec) const {
+multi_array<double, 1> Solver::vector_to_multi_array(const std::vector<double> &vec) {
     const int size = static_cast<int>(vec.size());
     multi_array<double, 1> vec_m(extents[size]);
     for (int i = 0; i < size; i++) {
@@ -187,11 +187,23 @@ multi_array<std::complex<double>, 2> Solver::do_step_cn(const multi_array<std::c
                                                         const std::vector<double> &xgrid,
                                                         const std::vector<double> &ygrid, const double z,
                                                         const double dz) const {
+    // get index in slice
+    multi_array<double, 2> index_slice(extents[numx][numy]);
+    for (int idx = 0; idx < numx; idx++) {
+        for (int idy = 0; idy < numy; idy++) {
+            index_slice[idx][idy] = get_refractive_index(xgrid[idx], ygrid[idy], z);
+        }
+    }
+    // prefactor is p=(alpha-1)*dz*i/(2k0*n0).
+    const std::complex<double> preFactorRHS =
+            (scheme_parameter - 1.0) * dz / (2.0 * k0 * reference_index) * std::complex<double>{0.0, 1.0};
+
     //get RHS vector, store as multi-array.
-    auto rhs = get_rhs(field, xgrid, ygrid, z, dz);
+    auto rhs = OperatorSuite::get_rhs(field, xgrid, ygrid, index_slice, reference_index, k0, preFactorRHS, pmlxPtr,
+                                      pmlyPtr);
 
 
-    const auto pre_factor = scheme_parameter * dz / (2.0 * k0 * reference_index) * std::complex<double>{0.0, 1.0};
+    const auto preFactorLHS = scheme_parameter * dz / (2.0 * k0 * reference_index) * std::complex<double>{0.0, 1.0};
 
     //solver for half step field
     multi_array<std::complex<double>, 2> half_step(extents[numx][numy]);
@@ -199,26 +211,27 @@ multi_array<std::complex<double>, 2> Solver::do_step_cn(const multi_array<std::c
     //invert (1+...Gx) operator, so only coupling between neighbours in x direction, this means we have numy independent problems
     for (int idy = 1; idy < numy - 1; idy++) {
         auto size = numx - 2;
-        std::vector<double> xmid(size);
-        std::vector<double> xneighbor_previous(size);
-        std::vector<double> xneighbor_next(size);
-        std::vector<double> ymid(size);
-        std::vector<double> yneighbor_previous(size);
-        std::vector<double> yneighbor_next(size);
+        std::vector<double> position_mid(size);
+        std::vector<double> position_back(size);
+        std::vector<double> position_forward(size);
+        std::vector<double> index_mid(size);
+        std::vector<double> index_back(size);
+        std::vector<double> index_forward(size);
         std::vector<std::complex<double> > rhs_slice(size);
         //fill vectors
         for (auto array_index = 0; array_index < size; array_index++) {
-            xmid[array_index] = xgrid[array_index + 1];
-            xneighbor_previous[array_index] = xgrid[array_index];
-            xneighbor_next[array_index] = xgrid[array_index + 2];
-            //derivative in x direction, so neighbors have the same y value
-            ymid[array_index] = ygrid[idy];
-            yneighbor_previous[array_index] = ygrid[idy];
-            yneighbor_next[array_index] = ygrid[idy];
+            position_mid[array_index] = xgrid[array_index + 1];
+            position_back[array_index] = xgrid[array_index];
+            position_forward[array_index] = xgrid[array_index + 2];
+            index_mid[array_index] = get_refractive_index(xgrid[array_index + 1], ygrid[idy], z + 0.5 * dz);
+            index_back[array_index] = get_refractive_index(xgrid[array_index], ygrid[idy], z + 0.5 * dz);
+            index_forward[array_index] = get_refractive_index(xgrid[array_index + 2], ygrid[idy], z + 0.5 * dz);
+
             rhs_slice[array_index] = rhs[array_index + 1][idy];
         }
-        auto solution = solve_system(xmid, xneighbor_previous, xneighbor_next, ymid, yneighbor_previous, yneighbor_next,
-                                     dx, z + 0.5 * dz, pre_factor, rhs_slice, pmlxPtr);
+        auto solution = OperatorSuite::solve_system(position_mid, position_back, position_forward, index_mid,
+                                                    index_back, index_forward, reference_index, k0, preFactorLHS,
+                                                    rhs_slice, pmlxPtr);
 
 
         //store into solution vector
@@ -234,27 +247,28 @@ multi_array<std::complex<double>, 2> Solver::do_step_cn(const multi_array<std::c
     //invert (1+...Gy) operator, so only coupling between neighbours in y direction, this means we have numx independent problems
     for (int idx = 1; idx < numx - 1; idx++) {
         auto size = numy - 2;
-        std::vector<double> xmid(size);
-        std::vector<double> xneighbor_previous(size);
-        std::vector<double> xneighbor_next(size);
-        std::vector<double> ymid(size);
-        std::vector<double> yneighbor_previous(size);
-        std::vector<double> yneighbor_next(size);
+        std::vector<double> position_mid(size);
+        std::vector<double> position_back(size);
+        std::vector<double> position_forward(size);
+        std::vector<double> index_mid(size);
+        std::vector<double> index_back(size);
+        std::vector<double> index_forward(size);
         std::vector<std::complex<double> > rhs_slice(size);
         //fill vectors
         for (auto array_index = 0; array_index < size; array_index++) {
-            //derivative in y direction, so neighbors have the same x value
-            xmid[array_index] = xgrid[idx];
-            xneighbor_previous[array_index] = xgrid[idx];
-            xneighbor_next[array_index] = xgrid[idx];
-            ymid[array_index] = ygrid[array_index + 1];
-            yneighbor_previous[array_index] = ygrid[array_index];
-            yneighbor_next[array_index] = ygrid[array_index + 2];
+            position_mid[array_index] = ygrid[array_index + 1];
+            position_back[array_index] = ygrid[array_index];
+            position_forward[array_index] = ygrid[array_index + 2];
+            index_mid[array_index] = get_refractive_index(xgrid[idx], ygrid[array_index + 1], z + dz);
+            index_back[array_index] = get_refractive_index(xgrid[idx], ygrid[array_index], z + dz);
+            index_forward[array_index] = get_refractive_index(xgrid[idx], ygrid[array_index + 2], z + dz);
             //using the half_step now to fill the rhs vector.
             rhs_slice[array_index] = half_step[idx][array_index + 1];
         }
-        auto solution = solve_system(xmid, xneighbor_previous, xneighbor_next, ymid, yneighbor_previous, yneighbor_next,
-                                     dy, z + dz, pre_factor, rhs_slice, pmlyPtr);
+
+        auto solution = OperatorSuite::solve_system(position_mid, position_back, position_forward, index_mid,
+                                                    index_back, index_forward, reference_index, k0, preFactorLHS,
+                                                    rhs_slice, pmlyPtr);
 
 
         //store into solution vector
@@ -263,120 +277,6 @@ multi_array<std::complex<double>, 2> Solver::do_step_cn(const multi_array<std::c
         }
     }
     return full_step;
-}
-
-multi_array<std::complex<double>, 2> Solver::get_rhs(const multi_array<std::complex<double>, 2> &field,
-                                                     const std::vector<double> &xgrid, const std::vector<double> &ygrid,
-                                                     const double z, const double dz) const {
-    // prefactor is (alpha-1)*dz*i/(2k0*n0).
-    const std::complex<double> pre_factor =
-            (scheme_parameter - 1.0) * dz / (2.0 * k0 * reference_index) * std::complex<double>{0.0, 1.0};
-    //right hand side vector
-    multi_array<std::complex<double>, 2> rhs1(extents[numx][numy]);
-    // apply the operator (1-...Gy)
-    for (int i = 0; i < numx; i++) {
-        for (int j = 0; j < numy; j++) {
-            if (i == 0 || j == 0 || i == numx - 1 || j == numy - 1) {
-                //ignore boundary values.
-                rhs1[i][j] = std::complex<double>{0.0, 0.0};
-            } else {
-                // x value on the mid-point and neighbors is the same, as we only apply the derivative in y direction here.
-                rhs1[i][j] = apply_right_hand_operator(xgrid[i], xgrid[i], xgrid[i], ygrid[j], ygrid[j - 1],
-                                                       ygrid[j + 1],
-                                                       dy, z,
-                                                       pre_factor, field[i][j], field[i][j - 1], field[i][j + 1],
-                                                       pmlyPtr);
-            }
-        }
-    }
-    //now apply the operator (1-...Gx)
-    multi_array<std::complex<double>, 2> rhs2(extents[numx][numy]);
-    for (int i = 0; i < numx; i++) {
-        for (int j = 0; j < numy; j++) {
-            if (i == 0 || j == 0 || i == numx - 1 || j == numy - 1) {
-                //ignore boundary values.
-                rhs2[i][j] = std::complex<double>{0.0, 0.0};
-            } else {
-                // y value on the mid-point and neighbors is the same, as we only apply the derivative in x direction here.
-                rhs2[i][j] = apply_right_hand_operator(xgrid[i], xgrid[i - 1], xgrid[i + 1], ygrid[j], ygrid[j],
-                                                       ygrid[j],
-                                                       dx, z,
-                                                       pre_factor, rhs1[i][j], rhs1[i - 1][j], rhs1[i + 1][j], pmlxPtr);
-            }
-        }
-    }
-    return rhs2;
-}
-
-std::complex<double> Solver::apply_right_hand_operator(const double xmid, const double xneighbor_previous,
-                                                       const double xneighbor_next,
-                                                       const double ymid,
-                                                       const double yneighbor_previous, const double yneighbor_next,
-                                                       const double neighbor_distance, const double z,
-                                                       const std::complex<double> preFactor,
-                                                       const std::complex<double> fieldValueMid,
-                                                       const std::complex<double> fieldValue_previous,
-                                                       const std::complex<double> fieldValue_next,
-                                                       const PML *pmlPtr) const {
-    const double index_mid = get_refractive_index(xmid, ymid, z);
-    const double index_previous = get_refractive_index(xneighbor_previous, yneighbor_previous, z);
-    const double index_next = get_refractive_index(xneighbor_next, yneighbor_next, z);
-    auto pmlfactor_mid = pmlPtr->get_pml_factor(xmid, index_mid);
-    auto pmlfactor_previous = pmlPtr->get_pml_factor(xneighbor_previous, index_previous);
-    auto pmlfactor_next = pmlPtr->get_pml_factor(xneighbor_next, index_next);
-
-    std::complex<double> value = fieldValueMid;
-    const std::complex<double> coefficient = preFactor * pmlfactor_mid / (2.0 * neighbor_distance * neighbor_distance);
-
-    // add index contribution
-    value += preFactor * 0.5 * k0 * k0 * (index_mid * index_mid - reference_index * reference_index) * fieldValueMid;
-    // add double derivative contribution
-    value += coefficient * ((pmlfactor_mid + pmlfactor_next) * fieldValue_next - (
-                                pmlfactor_next + 2.0 * pmlfactor_mid + pmlfactor_previous) * fieldValueMid + (
-                                pmlfactor_mid + pmlfactor_previous) * fieldValue_previous);
-    return value;
-}
-
-std::vector<std::complex<double> > Solver::solve_system(const std::vector<double> &xmid,
-                                                        const std::vector<double> &xneighbor_previous,
-                                                        const std::vector<double> &xneighbor_next,
-                                                        const std::vector<double> &ymid,
-                                                        const std::vector<double> &yneighbor_previous,
-                                                        const std::vector<double> &yneighbor_next,
-                                                        const double neighbor_distance, const double z,
-                                                        const std::complex<double> preFactor,
-                                                        const std::vector<std::complex<double> > &rhs_slice,
-                                                        const PML *pmlPtr) const {
-    const auto size = rhs_slice.size();
-    // compute matrix entries
-    std::vector<std::complex<double> > lower_diag(size - 1);
-    std::vector<std::complex<double> > diag(size);
-    std::vector<std::complex<double> > upper_diag(size - 1);
-    std::vector<std::complex<double> > temp_rhs = rhs_slice;
-    for (auto idx = 0; idx < size; idx++) {
-        const double index_mid = get_refractive_index(xmid[idx], ymid[idx], z);
-        const double index_previous = get_refractive_index(xneighbor_previous[idx], yneighbor_previous[idx], z);
-        const double index_next = get_refractive_index(xneighbor_next[idx], yneighbor_next[idx], z);
-        auto pmlfactor_mid = pmlPtr->get_pml_factor(xmid[idx], index_mid);
-        auto pmlfactor_previous = pmlPtr->get_pml_factor(xneighbor_previous[idx], index_previous);
-        auto pmlfactor_next = pmlPtr->get_pml_factor(xneighbor_next[idx], index_next);
-        const std::complex<double> coefficient =
-                preFactor * pmlfactor_mid / (2.0 * neighbor_distance * neighbor_distance);
-
-
-        diag[idx] = 1.0 + preFactor * 0.5 * k0 * k0 * (index_mid * index_mid - reference_index * reference_index)
-                    - coefficient * (pmlfactor_next + 2.0 * pmlfactor_mid + pmlfactor_previous);
-        if (idx > 1) {
-            lower_diag[idx - 1] = coefficient * (pmlfactor_mid + pmlfactor_previous);
-        }
-        if (idx < size - 1) {
-            upper_diag[idx] = coefficient * (pmlfactor_mid + pmlfactor_next);
-        }
-    }
-    //solve
-    auto solution = TriDiag<std::complex<double> >::solve_thomas(lower_diag, diag, upper_diag, temp_rhs);
-
-    return solution;
 }
 
 
