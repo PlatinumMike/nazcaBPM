@@ -14,6 +14,7 @@ struct Parameters {
     double wl; //vacuum wavelength (um)
     int resolution_x; //number of gridpoints per unit length in x direction
     int resolution_y; //number of gridpoints per unit length in y direction
+    int resolution_z; //number of gridpoints per unit length in z direction
     int numx; //number of gridpoints
     int numy;
     int numz;
@@ -21,9 +22,14 @@ struct Parameters {
     double domain_len_x; //length of the domain in x direction
     double domain_len_y; //length of the domain in y direction
     double domain_len_z; //length of the domain in z direction
+    double dx; //grid spacing, assuming a uniform mesh
+    double dy;
+    double dz;
     double reference_index;
     double k0; //vacuum wavenumber
     double beta_ref;
+
+    double scheme_parameter; //value between 0 and 1. For the classical Crank-Nicolson use 0.5.
 
     double pml_strength; //max conductivity inside the PML
     double pml_thickness; //thickness of the PML (um)

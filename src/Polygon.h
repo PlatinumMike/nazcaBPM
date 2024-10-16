@@ -26,7 +26,7 @@ public:
     explicit Polygon(std::vector<Point> points_input);
 
     // evaluate if a point is inside the polygon.
-    bool point_inside_polygon(Point point) const;
+    [[nodiscard]] bool point_inside_polygon(Point point) const;
 
 private:
     std::vector<Point> points;
