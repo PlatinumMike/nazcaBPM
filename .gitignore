@@ -3,3 +3,10 @@ build/*
 cmake-build-debug/*
 cmake-build-debug-coverage/*
 test/doctest.h
+doc/derivation_bpm.aux
+doc/derivation_bpm.bbl
+doc/derivation_bpm.blg
+doc/derivation_bpm.log
+doc/derivation_bpm.out
+doc/derivation_bpm.pdf
+doc/derivation_bpm.synctex.gz
