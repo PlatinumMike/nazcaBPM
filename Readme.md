@@ -1,7 +1,7 @@
 # Beam propagation method
 This simulation tool can be used to rapidly simulate structures, as long as they vary "slowly" in the propagation direction.
 This includes: MMIs, directional couplers, adiabatic taper, star coupler, etc...
-The simulation is performed in 3D, with perfectly matched layers (PMLs) in x and y direction.
+The simulation is performed in 3D, with perfectly matched layers (PMLs) in two transverse directions.
 
 Bends can be modelled as long as they are gradual enough (small angle). For 90 degree bends the propagation direction changes, so the slowly varying envelope approximation (SVEA) breaks down.
 This can be tackled by using a conformal mapping, or changing to cylindrical coordinates. But currently the code is limited to simple Cartesian coordinates.

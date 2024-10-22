@@ -24,7 +24,7 @@ struct Shape {
  */
 class Geometry {
 public:
-    Geometry(std::vector<Shape> shapes, double background_index);
+    Geometry(const std::vector<Shape> &shapes, double background_index);
 
     //loop over all shapes, find if the point is inside, and return the index.
     double get_index(double x, double y, double z) const;

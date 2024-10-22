@@ -13,7 +13,7 @@ using boost::multi_array;
 class OperatorSuite {
 public:
     /**
-     * applies the operator (1+prefactorGx) or (1+prefactorGy). You can decide which one to do based on the neighbor values you pass into the function.
+     * applies the operator (1+prefactorGy) or (1+prefactorGz). You can decide which one to do based on the neighbor values you pass into the function.
      * @param position_mid mid-point
      * @param position_back position of one grid point back in the direction of the derivative.
      * @param position_forward position of one grid point forward in the direction of the derivative.
@@ -41,12 +41,12 @@ public:
                                                           std::complex<double> fieldValue_forward, const PML *pmlPtr);
 
     static multi_array<std::complex<double>, 2> get_rhs(const multi_array<std::complex<double>, 2> &field,
-                                                        const std::vector<double> &xgrid,
                                                         const std::vector<double> &ygrid,
+                                                        const std::vector<double> &zgrid,
                                                         const multi_array<double, 2> &index,
                                                         double reference_index, double k0,
                                                         std::complex<double> preFactor,
-                                                        const PML *pmlxPtr, const PML *pmlyPtr);
+                                                        const PML *pmlyPtr, const PML *pmlzPtr);
 
 
     static std::vector<std::complex<double> > solve_system(const std::vector<double> &position_mid,

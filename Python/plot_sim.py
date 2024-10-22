@@ -35,71 +35,70 @@ def get_field(filename: str, grid1: str, grid2: str):
 
 
 # %% load files
-field_start = get_field("../build/field_start.h5", "xgrid", "ygrid")
-field_end = get_field("../build/field_end.h5", "xgrid", "ygrid")
-field_yz = get_field("../build/field_yz.h5", "ygrid", "zgrid")
+field_yz_start = get_field("../build/field_yz_start.h5", "ygrid", "zgrid")
+field_yz_end = get_field("../build/field_yz_end.h5", "ygrid", "zgrid")
 field_xz = get_field("../build/field_xz.h5", "xgrid", "zgrid")
+field_xy = get_field("../build/field_xy.h5", "xgrid", "ygrid")
 
-index_start = get_index("../build/index_start.h5", "xgrid", "ygrid")
-index_end = get_index("../build/index_end.h5", "xgrid", "ygrid")
+index_yz_start = get_index("../build/index_yz_start.h5", "ygrid", "zgrid")
+index_yz_end = get_index("../build/index_yz_end.h5", "ygrid", "zgrid")
+index_xy = get_index("../build/index_xy.h5", "xgrid", "ygrid")
 index_xz = get_index("../build/index_xz.h5", "xgrid", "zgrid")
-index_yz = get_index("../build/index_yz.h5", "ygrid", "zgrid")
 
 # %% plotting
 
 plt.figure()
-plt.contourf(field_start["ygrid"], field_start["xgrid"], field_start["field"].real, 20)
+plt.contourf(field_yz_start["ygrid"], field_yz_start["zgrid"], field_yz_start["field"].real.T, 20)
 plt.xlabel("y")
-plt.ylabel("x")
+plt.ylabel("z")
 plt.show()
 
 plt.figure()
-plt.contourf(field_end["ygrid"], field_end["xgrid"], field_end["field"].real, 20)
+plt.contourf(field_yz_end["ygrid"], field_yz_end["zgrid"], field_yz_end["field"].real.T, 20)
 plt.xlabel("y")
-plt.ylabel("x")
+plt.ylabel("z")
 plt.show()
 
-intensity_yz = np.abs(field_yz["field"]) ** 2
 intensity_xz = np.abs(field_xz["field"]) ** 2
+intensity_xy = np.abs(field_xy["field"]) ** 2
 
-# warning, the y direction is mirrored, because ymin is at the top, ymax at the bottom.
 plt.figure()
-plt.contourf(field_yz["zgrid"], field_yz["ygrid"], intensity_yz, 20, cmap="inferno")
-plt.xlabel("z")
+plt.contourf(field_xz["xgrid"], field_xz["zgrid"], intensity_xz.T, 20, cmap="inferno")
+plt.xlabel("x")
+plt.ylabel("z")
+plt.show()
+
+plt.figure()
+plt.contourf(field_xy["xgrid"], field_xy["ygrid"], intensity_xy.T, 20, cmap="inferno")
+plt.xlabel("x")
 plt.ylabel("y")
 plt.show()
 
-plt.figure()
-plt.contourf(field_xz["zgrid"], field_xz["xgrid"], intensity_xz, 20, cmap="inferno")
-plt.xlabel("z")
-plt.ylabel("x")
-plt.show()
-
 
 plt.figure()
-plt.contourf(index_end["ygrid"], index_end["xgrid"], index_end["index"])
+plt.contourf(index_yz_end["ygrid"], index_yz_end["zgrid"], index_yz_end["index"].T)
 plt.xlabel("y")
-plt.ylabel("x")
+plt.ylabel("z")
 plt.colorbar()
 plt.show()
 
 plt.figure()
-plt.contourf(index_start["ygrid"], index_start["xgrid"], index_start["index"])
+plt.contourf(index_yz_start["ygrid"], index_yz_start["zgrid"], index_yz_start["index"].T)
 plt.xlabel("y")
-plt.ylabel("x")
+plt.ylabel("z")
 plt.colorbar()
 plt.show()
 
 plt.figure()
-plt.contourf(index_yz["zgrid"], index_yz["ygrid"], index_yz["index"])
-plt.xlabel("z")
+plt.contourf(index_xz["xgrid"], index_xz["zgrid"], index_xz["index"].T)
+plt.xlabel("x")
+plt.ylabel("z")
+plt.colorbar()
+plt.show()
+
+plt.figure()
+plt.contourf(index_xy["xgrid"], index_xy["ygrid"], index_xy["index"].T)
+plt.xlabel("x")
 plt.ylabel("y")
-plt.colorbar()
-plt.show()
-
-plt.figure()
-plt.contourf(index_xz["zgrid"], index_xz["xgrid"], index_xz["index"])
-plt.xlabel("z")
-plt.ylabel("x")
 plt.colorbar()
 plt.show()

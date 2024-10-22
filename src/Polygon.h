@@ -7,12 +7,8 @@
 #include <vector>
 
 /**
- * Polygon class. This uses nazca/klayout style (x,y) coordinates. The z direction is the normal direction of the chip.
- * So out of the plane. These coordinates are not the same as the BPM coordinates.
- * x_nazca = z_bpm
- * y_nazca = -y_bpm
- * z_nazca = x_bpm
- * Polygons in the polygon class can be described with a vector of points (x_nazca, y_nazca).
+ * Polygon class. Polygons can be described with a vector of points (x, y).
+ * These are the coordinates in the plane of the chip, so the z direction is out of the the plane.
  */
 struct Point {
     double x, y;
