@@ -146,7 +146,7 @@
 		\end{align}
 		\label{envelope_split}
 	\end{subequations}
-	where $n_0$ is a yet to be chosen ``reference index''\footnote{This is another weakness of BPM. You have to choose $n_0$. Typically we choose this equal to the effective index. But what do you do when this varies in the propagation direction, or what if you have multiple modes with a different effective index? You can choose $n_0$ equal to the average of those, but the approximation of Eq. \eqref{paraxial_approx} will not be accurate for every mode and every $z$ position.}. 
+	where $n_0$ is a yet to be chosen ``reference index''\footnote{This is another weakness of BPM. You have to choose $n_0$. Typically we choose this equal to the effective index. But what do you do when this varies in the propagation direction, or what if you have multiple modes with a different effective index? You can choose $n_0$ equal to the average of those, but the approximation of Eq. \eqref{paraxial_approx} will not be accurate for every mode and every $x$ position.}. 
 	Since the propagation is mainly along $x$ direction, and the structures are varying slowly in that direction, the envelope function will vary slowly in $x$ direction, compared to the rapidly oscillating phase term. More explicitly,
 	we have:
 	\begin{equation}
@@ -158,16 +158,16 @@
 	Plugging Eq. \eqref{envelope_split} into Eq. \eqref{main_eqs} and applying the Paraxial approximation yields:
 	\begin{subequations}
 		\begin{align}
-			2i k_0 n_0 \frac{\Psi_y}{\partial x} &= \frac{\partial^2\Psi_y}{\partial y^2}+\frac{\partial^2\Psi_y}{\partial z^2}+\frac{\partial}{\partial y}\left(\frac{1}{n^2}\frac{\partial n^2}{\partial y} \Psi_y+\frac{1}{n^2}\frac{\partial n^2}{\partial z} \Psi_z \right)+k_0^2(n^2-n_0^2)\Psi_y \, ,\\
-			2i k_0 n_0 \frac{\Psi_z}{\partial x} &= \frac{\partial^2\Psi_z}{\partial y^2}+\frac{\partial^2\Psi_z}{\partial z^2}+\frac{\partial}{\partial z}\left(\frac{1}{n^2}\frac{\partial n^2}{\partial z} \Psi_y+\frac{1}{n^2}\frac{\partial n^2}{\partial z} \Psi_z \right)+k_0^2(n^2-n_0^2)\Psi_z  \, .
+			2i k_0 n_0 \frac{\partial \Psi_y}{\partial x} &= \frac{\partial^2\Psi_y}{\partial y^2}+\frac{\partial^2\Psi_y}{\partial z^2}+\frac{\partial}{\partial y}\left(\frac{1}{n^2}\frac{\partial n^2}{\partial y} \Psi_y+\frac{1}{n^2}\frac{\partial n^2}{\partial z} \Psi_z \right)+k_0^2(n^2-n_0^2)\Psi_y \, ,\\
+			2i k_0 n_0 \frac{\partial \Psi_z}{\partial x} &= \frac{\partial^2\Psi_z}{\partial y^2}+\frac{\partial^2\Psi_z}{\partial z^2}+\frac{\partial}{\partial z}\left(\frac{1}{n^2}\frac{\partial n^2}{\partial y} \Psi_y+\frac{1}{n^2}\frac{\partial n^2}{\partial z} \Psi_z \right)+k_0^2(n^2-n_0^2)\Psi_z  \, .
 		\end{align}
 	\end{subequations}
 	
 	This can be refactored as:
 	\begin{subequations}
 		\begin{align}
-			2i k_0 n_0 \frac{\Psi_y}{\partial x} &= P_{yy} \Psi_y+P_{yz} \Psi_z \, ,\\
-			2i k_0 n_0 \frac{\Psi_z}{\partial x} &= P_{zz} \Psi_z+P_{zy} \Psi_y \, .
+			2i k_0 n_0 \frac{\partial \Psi_y}{\partial x} &= P_{yy} \Psi_y+P_{yz} \Psi_z \, ,\\
+			2i k_0 n_0 \frac{\partial \Psi_z}{\partial x} &= P_{zz} \Psi_z+P_{zy} \Psi_y \, .
 		\end{align}
 		\label{bpm_eq1}
 	\end{subequations}
