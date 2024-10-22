@@ -3,7 +3,6 @@
 //
 
 #include "Solver.h"
-#include "AuxiliaryFunctions.h"
 #include "IO/Readers.h"
 #include "IO/hdf_writer.h"
 #include "OperatorSuite.h"
@@ -22,34 +21,35 @@
 using boost::multi_array;
 using boost::extents;
 
-Solver::Solver(const Geometry &geometry, const PML &pmly, const PML &pmlz, const ModeHandler &source, double xmin,
-               double xmax, double ymin, double ymax, double zmin, double zmax, int numx, int numy,
-               int numz, const double scheme_parameter, double k0, double reference_index): xmin(xmin), xmax(xmax),
-    ymin(ymin), ymax(ymax), zmin(zmin),
-    zmax(zmax), numx(numx),
-    numy(numy), numz(numz), scheme_parameter(scheme_parameter), k0(k0), reference_index(reference_index) {
+Solver::Solver(const Geometry &geometry, const PML &pmly, const PML &pmlz, const ModeHandler &source,
+               const RectangularGrid &grid,
+               const double scheme_parameter, const double k0,
+               const double reference_index): scheme_parameter(scheme_parameter),
+                                              k0(k0), reference_index(reference_index) {
     geometryPtr = &geometry;
     pmlyPtr = &pmly;
     pmlzPtr = &pmlz;
     sourcePtr = &source;
+    gridPtr = &grid;
 }
 
 void Solver::run() {
-    auto xgrid = AuxiliaryFunctions::linspace(xmin, xmax, numx);
-    auto ygrid = AuxiliaryFunctions::linspace(ymin, ymax, numy);
-    auto zgrid = AuxiliaryFunctions::linspace(zmin, zmax, numz);
-    dx = xgrid[1] - xgrid[0];
-    dy = ygrid[1] - ygrid[0];
-    dz = zgrid[1] - zgrid[0];
+    auto xgrid = gridPtr->get_xgrid();
+    auto ygrid = gridPtr->get_ygrid();
+    auto zgrid = gridPtr->get_zgrid();
+    auto xgrid_m = RectangularGrid::vector_to_multi_array(xgrid);
+    auto ygrid_m = RectangularGrid::vector_to_multi_array(ygrid);
+    auto zgrid_m = RectangularGrid::vector_to_multi_array(zgrid);
 
-    auto xgrid_m = vector_to_multi_array(xgrid);
-    auto ygrid_m = vector_to_multi_array(ygrid);
-    auto zgrid_m = vector_to_multi_array(zgrid);
+    int numx = static_cast<int>(gridPtr->get_numx());
+    int numy = static_cast<int>(gridPtr->get_numy());
+    int numz = static_cast<int>(gridPtr->get_numz());
 
-    dump_index_slice("index_yz_start.h5", 'x', 0.0, ygrid, zgrid);
-    dump_index_slice("index_yz_end.h5", 'x', xgrid.back(), ygrid, zgrid);
-    dump_index_slice("index_xz.h5", 'y', 0.0, xgrid, zgrid);
-    dump_index_slice("index_xy.h5", 'z', 0.0, xgrid, ygrid);
+
+    dump_index_slice("index_yz_start.h5", 'x', 0.0);
+    dump_index_slice("index_yz_end.h5", 'x', xgrid.back());
+    dump_index_slice("index_xz.h5", 'y', 0.0);
+    dump_index_slice("index_xy.h5", 'z', 0.0);
 
     //define field in current slice to be "field". Since it is a scalar BPM there is no polarization.
     multi_array<std::complex<double>, 2> field = sourcePtr->get_initial_profile(ygrid, zgrid, 0.0, 0.0, 1.0, 1.0);
@@ -69,7 +69,7 @@ void Solver::run() {
     const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     for (int x_step = 1; x_step < numx; x_step++) {
         const double current_x = xgrid[x_step - 1];
-        field = do_step_cn(field, ygrid, zgrid, current_x, dx);
+        field = do_step_cn(field, ygrid, zgrid, current_x, gridPtr->get_dx());
         record_slice(field, field_slice_xz, x_step, true);
         record_slice(field, field_slice_xy, x_step, false);
         //printing rough indication of simulation progress
@@ -107,23 +107,45 @@ void Solver::run() {
 
 void Solver::record_slice(const multi_array<std::complex<double>, 2> &buffer,
                           multi_array<std::complex<double>, 2> &storage, const int idx, const bool slice_y) const {
+    int numy = static_cast<int>(gridPtr->get_numy());
+    int numz = static_cast<int>(gridPtr->get_numz());
+
     if (slice_y) {
-        const int index_ymid = numy / 2; //zx slice at y=0 approximately
+        const int index_ymid = numy / 2; //xz slice at y=0 approximately
         for (int idz = 0; idz < numz; idz++) {
-            storage[idz][idx] = buffer[index_ymid][idz];
+            storage[idx][idz] = buffer[index_ymid][idz];
         }
     } else {
         const int index_zmid = numz / 2; //yx slice at z=0 approximately
         for (int idy = 0; idy < numy; idy++) {
-            storage[idy][idx] = buffer[idy][index_zmid];
+            storage[idx][idy] = buffer[idy][index_zmid];
         }
     }
 }
 
-void Solver::dump_index_slice(const std::string &filename, const char direction, const double slice_position,
-                              const std::vector<double> &grid_coordinate1,
-                              const std::vector<double> &grid_coordinate2) const {
+void Solver::dump_index_slice(const std::string &filename, const char direction, const double slice_position) const {
     assert(("Slice direction not recognized, use x or y or z", direction=='x' || direction=='y'|| direction=='z'));
+
+    std::vector<double> grid_coordinate1;
+    std::vector<double> grid_coordinate2;
+    std::string label1 = "grid1";
+    std::string label2 = "grid2";
+    if (direction == 'x') {
+        label1 = "ygrid";
+        label2 = "zgrid";
+        grid_coordinate1 = gridPtr->get_ygrid();
+        grid_coordinate2 = gridPtr->get_zgrid();
+    } else if (direction == 'y') {
+        label1 = "xgrid";
+        label2 = "zgrid";
+        grid_coordinate1 = gridPtr->get_xgrid();
+        grid_coordinate2 = gridPtr->get_zgrid();
+    } else {
+        label1 = "xgrid";
+        label2 = "ygrid";
+        grid_coordinate1 = gridPtr->get_xgrid();
+        grid_coordinate2 = gridPtr->get_ygrid();
+    }
 
     const int num1 = static_cast<int>(grid_coordinate1.size());
     const int num2 = static_cast<int>(grid_coordinate2.size());
@@ -144,21 +166,8 @@ void Solver::dump_index_slice(const std::string &filename, const char direction,
         }
     }
 
-    std::string label1 = "grid1";
-    std::string label2 = "grid2";
-    if (direction == 'x') {
-        label1 = "ygrid";
-        label2 = "zgrid";
-    } else if (direction == 'y') {
-        label1 = "xgrid";
-        label2 = "zgrid";
-    } else {
-        label1 = "xgrid";
-        label2 = "ygrid";
-    }
-
-    const auto grid1 = vector_to_multi_array(grid_coordinate1);
-    const auto grid2 = vector_to_multi_array(grid_coordinate2);
+    const auto grid1 = RectangularGrid::vector_to_multi_array(grid_coordinate1);
+    const auto grid2 = RectangularGrid::vector_to_multi_array(grid_coordinate2);
     H5::H5File file(filename, H5F_ACC_TRUNC);
     write_hdf5(file, "refractive_index", index_dataset);
     write_hdf5(file, label1, grid1);
@@ -166,14 +175,6 @@ void Solver::dump_index_slice(const std::string &filename, const char direction,
     file.close();
 }
 
-multi_array<double, 1> Solver::vector_to_multi_array(const std::vector<double> &vec) {
-    const int size = static_cast<int>(vec.size());
-    multi_array<double, 1> vec_m(extents[size]);
-    for (int i = 0; i < size; i++) {
-        vec_m[i] = vec[i];
-    }
-    return vec_m;
-}
 
 // todo: error prone to skip over boundary points. off by one in the array indexing can easily occur.
 // suggested solution: include the boundary points in the matrix, but overrule that row, and rhs entry to force the solution to zero on the edges.
@@ -182,6 +183,9 @@ multi_array<std::complex<double>, 2> Solver::do_step_cn(const multi_array<std::c
                                                         const std::vector<double> &ygrid,
                                                         const std::vector<double> &zgrid, const double x,
                                                         const double dx) const {
+    int numy = static_cast<int>(ygrid.size());
+    int numz = static_cast<int>(zgrid.size());
+
     // get index in slice
     multi_array<double, 2> index_slice(extents[numy][numz]);
     for (int idy = 0; idy < numy; idy++) {
@@ -276,6 +280,9 @@ multi_array<std::complex<double>, 2> Solver::do_step_cn(const multi_array<std::c
 
 
 multi_array<double, 2> Solver::get_intensity(const multi_array<std::complex<double>, 2> &field) const {
+    const int numy = static_cast<int>(field.shape()[0]);
+    const int numz = static_cast<int>(field.shape()[1]);
+
     multi_array<double, 2> intensity(extents[numy][numz]);
     double max = 0.0;
     for (auto idy = 0; idy < field.shape()[0]; idy++) {

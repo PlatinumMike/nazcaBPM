@@ -32,7 +32,9 @@ add_executable(${EXENAME} src/main.cpp
         src/ModeHandler.cpp
         src/ModeHandler.h
         src/OperatorSuite.cpp
-        src/OperatorSuite.h)
+        src/OperatorSuite.h
+        src/RectangularGrid.cpp
+        src/RectangularGrid.h)
 
 target_link_libraries(${EXENAME} PRIVATE HDF5::HDF5)
 target_link_libraries(${EXENAME} PRIVATE Boost::boost)

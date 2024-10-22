@@ -80,13 +80,13 @@ void write_hdf5(H5::H5File file, const std::string& data_set_name, const boost::
 inline void write_cmplx_hdf5(const std::string &filename,
                              const boost::multi_array<std::complex<double>, 2> &data, const multi_array<double,1>& grid1,
                              const multi_array<double,1>& grid2, const char direction) {
-    const auto ny = static_cast<int>(data.shape()[0]);
-    const auto nz = static_cast<int>(data.shape()[1]);
+    const auto num1 = static_cast<int>(data.shape()[0]);
+    const auto num2 = static_cast<int>(data.shape()[1]);
 
-    multi_array<double, 2> data_real(boost::extents[ny][nz]);
-    multi_array<double, 2> data_imag(boost::extents[ny][nz]);
-    for (int i = 0; i < ny; i++) {
-        for (int j = 0; j < nz; j++) {
+    multi_array<double, 2> data_real(boost::extents[num1][num2]);
+    multi_array<double, 2> data_imag(boost::extents[num1][num2]);
+    for (int i = 0; i < num1; i++) {
+        for (int j = 0; j < num2; j++) {
             data_real[i][j] = data[i][j].real();
             data_imag[i][j] = data[i][j].imag();
         }
