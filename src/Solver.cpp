@@ -69,7 +69,7 @@ void Solver::run() {
     const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     for (int x_step = 1; x_step < numx; x_step++) {
         const double current_x = xgrid[x_step - 1];
-        field = do_step_cn(field, ygrid, zgrid, current_x, gridPtr->get_dx());
+        field = do_step_cn(field, current_x, gridPtr->get_dx());
         record_slice(field, field_slice_xz, x_step, true);
         record_slice(field, field_slice_xy, x_step, false);
         //printing rough indication of simulation progress
@@ -180,9 +180,9 @@ void Solver::dump_index_slice(const std::string &filename, const char direction,
 // suggested solution: include the boundary points in the matrix, but overrule that row, and rhs entry to force the solution to zero on the edges.
 // todo: also, a lot of code duplication here in do_step_cn, and get_rhs. Generalize, then clean up.
 multi_array<std::complex<double>, 2> Solver::do_step_cn(const multi_array<std::complex<double>, 2> &field,
-                                                        const std::vector<double> &ygrid,
-                                                        const std::vector<double> &zgrid, const double x,
-                                                        const double dx) const {
+                                                        const double x, const double dx) const {
+    auto ygrid = gridPtr->get_ygrid();
+    auto zgrid = gridPtr->get_zgrid();
     int numy = static_cast<int>(ygrid.size());
     int numz = static_cast<int>(zgrid.size());
 

@@ -48,15 +48,11 @@ private:
     /**
      * Do one step in propagation direction with the Crank-Nicolson scheme
      * @param field old field value. This value is not modified.
-     * @param ygrid grid in y direction
-     * @param zgrid grid in z direction
      * @param x position along the propagation direction
      * @param dx step size in propagation direction
      * @return new field value
      */
-    multi_array<std::complex<double>, 2> do_step_cn(const multi_array<std::complex<double>, 2> &field,
-                                                    const std::vector<double> &ygrid, const std::vector<double> &zgrid,
-                                                    double x,
+    multi_array<std::complex<double>, 2> do_step_cn(const multi_array<std::complex<double>, 2> &field, double x,
                                                     double dx) const;
 };
 
