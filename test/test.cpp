@@ -376,8 +376,15 @@ TEST_CASE("Check RHS operator") {
                                          &pmlz);
 
     double rms_error = 0.0;
-    for (int i = 0; i < numy; i++) {
-        for (int j = 0; j < numz; j++) {
+    // skip first and last two rows/columns of points. The first because it is zero anyway,
+    // the second because you get a very large numerical gradient there. The solution snaps to zero there.
+    // the reference case does not account for that because the derivative is taken analytically, so only justified to compare in the bulk.
+    // Note, this spike only appears on the edge of the domain in the y direction. This is because the rhs is calculated in two stages,
+    // In the first step the edges of the field were not zerod, so the numerical derivative is smooth. Then the edges get zeroed
+    // and the derivative in y direction is taken, resulting in the spike. This does not appear in the previous tests of Gy, Gz, because there the
+    // field is not zeroed on the edge. Note that this spike is not a numerical issue, it would also happen on the left hand side of the equation so it is in balance.
+    for (int i = 2; i < numy - 2; i++) {
+        for (int j = 2; j < numz - 2; j++) {
             double base = std::abs(values[i][j] - reference_values[i][j]);
             rms_error += base * base;
         }
