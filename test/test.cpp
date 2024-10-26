@@ -166,39 +166,39 @@ TEST_CASE("Check PML") {
 }
 
 
-TEST_CASE("Check Gx operator") {
-    int numx = 1000;
-    int numy = 120;
+TEST_CASE("Check Gy operator") {
+    int numy = 1000;
+    int numz = 120;
     std::complex<double> amplitude = {0.3, 0.5}; //u0
     std::complex<double> preFactor = {-0.1, 0.8}; //p
-    auto xgrid = AuxiliaryFunctions::linspace(-4.0, 4.0, numx);
-    auto ygrid = AuxiliaryFunctions::linspace(-2.0, 6.0, numy);
+    auto ygrid = AuxiliaryFunctions::linspace(-4.0, 4.0, numy);
+    auto zgrid = AuxiliaryFunctions::linspace(-2.0, 6.0, numz);
     double k0 = 1.0;
     double reference_index = 1.6;
     double index = 1.5; //using a uniform medium.
-    PML pmlx(1.0, 5.0, xgrid.front(), xgrid.back());
+    PML pmly(1.0, 5.0, ygrid.front(), ygrid.back());
 
-    //Using some example field: u = u0*sin(k0*x)*sin(2*k0*y)
-    multi_array<std::complex<double>, 2> field(extents[numx][numy]);
-    multi_array<std::complex<double>, 2> field_derivative(extents[numx][numy]);
-    for (int i = 0; i < numx; i++) {
-        for (int j = 0; j < numy; j++) {
-            field[i][j] = amplitude * sin(k0 * xgrid[i]) * sin(2.0 * k0 * ygrid[j]);
-            field_derivative[i][j] = amplitude * k0 * cos(k0 * xgrid[i]) * sin(2.0 * k0 * ygrid[j]);
+    //Using some example field: u = u0*sin(k0*y)*sin(2*k0*z)
+    multi_array<std::complex<double>, 2> field(extents[numy][numz]);
+    multi_array<std::complex<double>, 2> field_derivative(extents[numy][numz]);
+    for (int i = 0; i < numy; i++) {
+        for (int j = 0; j < numz; j++) {
+            field[i][j] = amplitude * sin(k0 * ygrid[i]) * sin(2.0 * k0 * zgrid[j]);
+            field_derivative[i][j] = amplitude * k0 * cos(k0 * ygrid[i]) * sin(2.0 * k0 * zgrid[j]);
         }
     }
 
-    // (1+p*Gx)u = (1+p/2*k0^2*(n^2-n0^2))*u+p*eta*eta'*u'+p*eta^2*u''
-    // where prime is the derivative w.r.t. x, and eta is the PML factor.
-    multi_array<std::complex<double>, 2> reference_values(extents[numx][numy]);
-    for (int i = 0; i < numx; i++) {
-        for (int j = 0; j < numy; j++) {
-            if (i == 0 || j == 0 || i == numx - 1 || j == numy - 1) {
+    // (1+p*Gy)u = (1+p/2*k0^2*(n^2-n0^2))*u+p*eta*eta'*u'+p*eta^2*u''
+    // where prime is the derivative w.r.t. y, and eta is the PML factor.
+    multi_array<std::complex<double>, 2> reference_values(extents[numy][numz]);
+    for (int i = 0; i < numy; i++) {
+        for (int j = 0; j < numz; j++) {
+            if (i == 0 || j == 0 || i == numy - 1 || j == numz - 1) {
                 //ignore boundary values.
                 reference_values[i][j] = std::complex<double>{0.0, 0.0};
             } else {
-                auto eta = pmlx.get_pml_factor(xgrid[i], index);
-                auto eta_prime = pmlx.get_pml_factor_derivative(xgrid[i], index);
+                auto eta = pmly.get_pml_factor(ygrid[i], index);
+                auto eta_prime = pmly.get_pml_factor_derivative(ygrid[i], index);
                 auto coef1 = 1.0 + 0.5 * preFactor * k0 * k0 * (index * index - reference_index * reference_index) -
                              preFactor * k0 * k0 * eta * eta;
                 auto coef2 = preFactor * eta * eta_prime;
@@ -208,32 +208,189 @@ TEST_CASE("Check Gx operator") {
     }
 
     //now apply the discretized form of the operator.
-    multi_array<std::complex<double>, 2> values(extents[numx][numy]);
-    for (int i = 0; i < numx; i++) {
-        for (int j = 0; j < numy; j++) {
-            if (i == 0 || j == 0 || i == numx - 1 || j == numy - 1) {
+    multi_array<std::complex<double>, 2> values(extents[numy][numz]);
+    for (int i = 0; i < numy; i++) {
+        for (int j = 0; j < numz; j++) {
+            if (i == 0 || j == 0 || i == numy - 1 || j == numz - 1) {
                 //ignore boundary values.
                 values[i][j] = std::complex<double>{0.0, 0.0};
             } else {
-                // y value on the mid-point and neighbors is the same, as we only apply the derivative in x direction here.
-                values[i][j] = OperatorSuite::apply_right_hand_operator(xgrid[i], xgrid[i - 1], xgrid[i + 1], index,
+                // z value on the mid-point and neighbors is the same, as we only apply the derivative in y direction here.
+                values[i][j] = OperatorSuite::apply_right_hand_operator(ygrid[i], ygrid[i - 1], ygrid[i + 1], index,
                                                                         index, index, reference_index, k0, preFactor,
                                                                         field[i][j], field[i - 1][j], field[i + 1][j],
-                                                                        &pmlx);
+                                                                        &pmly);
             }
         }
     }
 
     double rms_error = 0.0;
-    for (int i = 0; i < numx; i++) {
-        for (int j = 0; j < numy; j++) {
+    for (int i = 0; i < numy; i++) {
+        for (int j = 0; j < numz; j++) {
             double base = std::abs(values[i][j] - reference_values[i][j]);
             rms_error += base * base;
         }
     }
-    rms_error = std::sqrt(rms_error / (numx * numy));
+    rms_error = std::sqrt(rms_error / (numy * numz));
 
     //it will never be perfectly equal anyway, because it's an approximation on a grid. But the error should be small.
+    double abs_tol = 1.0e-3;
+    CHECK(rms_error <abs_tol);
+}
+
+TEST_CASE("Check Gz operator") {
+    int numy = 120;
+    int numz = 1000;
+    std::complex<double> amplitude = {0.3, 0.5}; //u0
+    std::complex<double> preFactor = {-0.1, 0.8}; //p
+    auto ygrid = AuxiliaryFunctions::linspace(-4.0, 4.0, numy);
+    auto zgrid = AuxiliaryFunctions::linspace(-2.0, 6.0, numz);
+    double k0 = 1.0;
+    double reference_index = 1.6;
+    double index = 1.5; //using a uniform medium.
+    PML pmlz(1.0, 5.0, zgrid.front(), zgrid.back());
+
+    //Using some example field: u = u0*sin(k0*y)*sin(2*k0*z)
+    multi_array<std::complex<double>, 2> field(extents[numy][numz]);
+    multi_array<std::complex<double>, 2> field_derivative(extents[numy][numz]);
+    for (int i = 0; i < numy; i++) {
+        for (int j = 0; j < numz; j++) {
+            field[i][j] = amplitude * sin(k0 * ygrid[i]) * sin(2.0 * k0 * zgrid[j]);
+            field_derivative[i][j] = 2.0 * amplitude * k0 * sin(k0 * ygrid[i]) * cos(2.0 * k0 * zgrid[j]);
+        }
+    }
+
+    // (1+p*Gz)u = (1+p/2*k0^2*(n^2-n0^2))*u+p*eta*eta'*u'+p*eta^2*u''
+    // where prime is the derivative w.r.t. z, and eta is the PML factor.
+    // and u'' = -4*k0^2*u
+    multi_array<std::complex<double>, 2> reference_values(extents[numy][numz]);
+    for (int i = 0; i < numy; i++) {
+        for (int j = 0; j < numz; j++) {
+            if (i == 0 || j == 0 || i == numy - 1 || j == numz - 1) {
+                //ignore boundary values.
+                reference_values[i][j] = std::complex<double>{0.0, 0.0};
+            } else {
+                auto eta = pmlz.get_pml_factor(zgrid[j], index);
+                auto eta_prime = pmlz.get_pml_factor_derivative(zgrid[j], index);
+                auto coef1 = 1.0 + 0.5 * preFactor * k0 * k0 * (index * index - reference_index * reference_index) -
+                             4.0 * preFactor * k0 * k0 * eta * eta;
+                auto coef2 = preFactor * eta * eta_prime;
+                reference_values[i][j] = coef1 * field[i][j] + coef2 * field_derivative[i][j];
+            }
+        }
+    }
+
+    //now apply the discretized form of the operator.
+    multi_array<std::complex<double>, 2> values(extents[numy][numz]);
+    for (int i = 0; i < numy; i++) {
+        for (int j = 0; j < numz; j++) {
+            if (i == 0 || j == 0 || i == numy - 1 || j == numz - 1) {
+                //ignore boundary values.
+                values[i][j] = std::complex<double>{0.0, 0.0};
+            } else {
+                // y value on the mid-point and neighbors is the same, as we only apply the derivative in z direction here.
+                values[i][j] = OperatorSuite::apply_right_hand_operator(zgrid[j], zgrid[j - 1], zgrid[j + 1], index,
+                                                                        index, index, reference_index, k0, preFactor,
+                                                                        field[i][j], field[i][j - 1], field[i][j + 1],
+                                                                        &pmlz);
+            }
+        }
+    }
+
+
+    double rms_error = 0.0;
+    for (int i = 0; i < numy; i++) {
+        for (int j = 0; j < numz; j++) {
+            double base = std::abs(values[i][j] - reference_values[i][j]);
+            rms_error += base * base;
+        }
+    }
+    rms_error = std::sqrt(rms_error / (numy * numz));
+
+    double abs_tol = 1.0e-3;
+    CHECK(rms_error <abs_tol);
+}
+
+//(1+pGy)(1+pGz)u
+TEST_CASE("Check RHS operator") {
+    int numy = 1200;
+    int numz = 1000;
+    std::complex<double> amplitude = {0.3, 0.5}; //u0
+    std::complex<double> preFactor = {-0.1, 0.8}; //p
+    auto ygrid = AuxiliaryFunctions::linspace(-4.0, 4.0, numy);
+    auto zgrid = AuxiliaryFunctions::linspace(-2.0, 6.0, numz);
+    double k0 = 1.0;
+    double reference_index = 1.6;
+    double index = 1.5; //using a uniform medium.
+    PML pmly(1.0, 5.0, ygrid.front(), ygrid.back());
+    PML pmlz(1.0, 5.0, zgrid.front(), zgrid.back());
+
+    //Using some example field: u = u0*sin(k0*y)*sin(2*k0*z)
+    multi_array<std::complex<double>, 2> field(extents[numy][numz]);
+    multi_array<std::complex<double>, 2> field_derivative_y(extents[numy][numz]);
+    multi_array<std::complex<double>, 2> field_derivative_z(extents[numy][numz]);
+    multi_array<std::complex<double>, 2> field_derivative_yz(extents[numy][numz]);
+    multi_array<double, 2> index_array(extents[numy][numz]);
+    std::fill_n(index_array.data(), index_array.num_elements(), index);
+    for (int i = 0; i < numy; i++) {
+        for (int j = 0; j < numz; j++) {
+            field[i][j] = amplitude * sin(k0 * ygrid[i]) * sin(2.0 * k0 * zgrid[j]);
+            field_derivative_y[i][j] = amplitude * k0 * cos(k0 * ygrid[i]) * sin(2.0 * k0 * zgrid[j]);
+            field_derivative_z[i][j] = 2.0 * amplitude * k0 * sin(k0 * ygrid[i]) * cos(2.0 * k0 * zgrid[j]);
+            field_derivative_yz[i][j] = 2.0 * amplitude * k0 * k0 * cos(k0 * ygrid[i]) * cos(2.0 * k0 * zgrid[j]);
+        }
+    }
+
+    /* RHS = (1+pGy)(1+pGz)u =
+     * t^2 u + t*p*xi^2 d^u/dz^2 + t*p*xi*xi'*du/dz +
+     * t*p*eta^2 d^2u/dy^2 + p^2*eta^2*xi^2* d^4 u/(dy^2*dz^2) + p^2 * eta^2*xi* xi'*d^3 u/(dy^2*dz) +
+     * t*p*eta*eta'*du/dy + p^2*eta*eta'*xi^2* d^3 u/(dy*dz^2) + p^2 * eta*eta'*xi*xi'* d^2 u/(dy*dz).
+     * with eta the PML factor in y direction, xi the PML factor in z direction.
+     * And t = 1+p/2*k0^2*(n^2-n0^2).
+     */
+    auto tFactor = 1.0 + 0.5 * preFactor * k0 * k0 * (index * index - reference_index * reference_index);
+    multi_array<std::complex<double>, 2> reference_values(extents[numy][numz]);
+    for (int i = 0; i < numy; i++) {
+        for (int j = 0; j < numz; j++) {
+            if (i == 0 || j == 0 || i == numy - 1 || j == numz - 1) {
+                //ignore boundary values.
+                reference_values[i][j] = std::complex<double>{0.0, 0.0};
+            } else {
+                auto eta = pmly.get_pml_factor(ygrid[i], index);
+                auto eta_prime = pmly.get_pml_factor_derivative(ygrid[i], index);
+                auto xi = pmlz.get_pml_factor(zgrid[j], index);
+                auto xi_prime = pmlz.get_pml_factor_derivative(zgrid[j], index);
+                auto coef1 = tFactor * tFactor - tFactor * preFactor * k0 * k0 * (eta * eta + 4.0 * xi * xi)
+                             + 4.0 * preFactor * preFactor * eta * eta * xi * xi * k0 * k0 * k0 * k0;
+                auto coef2 = preFactor * eta * eta_prime * (tFactor - 4.0 * k0 * k0 * preFactor * xi * xi);
+                auto coef3 = preFactor * xi * xi_prime * (tFactor - k0 * k0 * preFactor * eta * eta);
+                auto coef4 = preFactor * preFactor * eta * eta_prime * xi * xi_prime;
+                reference_values[i][j] = coef1 * field[i][j] + coef2 * field_derivative_y[i][j] + coef3 *
+                                         field_derivative_z[i][j] + coef4 * field_derivative_yz[i][j];
+            }
+        }
+    }
+
+    //now apply the discretized form of the operator.
+    auto values = OperatorSuite::get_rhs(field, ygrid, zgrid, index_array, reference_index, k0, preFactor, &pmly,
+                                         &pmlz);
+
+    double rms_error = 0.0;
+    // skip first and last two rows/columns of points. The first because it is zero anyway,
+    // the second because you get a very large numerical gradient there. The solution snaps to zero there.
+    // the reference case does not account for that because the derivative is taken analytically, so only justified to compare in the bulk.
+    // Note, this spike only appears on the edge of the domain in the y direction. This is because the rhs is calculated in two stages,
+    // In the first step the edges of the field were not zerod, so the numerical derivative is smooth. Then the edges get zeroed
+    // and the derivative in y direction is taken, resulting in the spike. This does not appear in the previous tests of Gy, Gz, because there the
+    // field is not zeroed on the edge. Note that this spike is not a numerical issue, it would also happen on the left hand side of the equation so it is in balance.
+    for (int i = 2; i < numy - 2; i++) {
+        for (int j = 2; j < numz - 2; j++) {
+            double base = std::abs(values[i][j] - reference_values[i][j]);
+            rms_error += base * base;
+        }
+    }
+    rms_error = std::sqrt(rms_error / (numy * numz));
+
     double abs_tol = 1.0e-3;
     CHECK(rms_error <abs_tol);
 }

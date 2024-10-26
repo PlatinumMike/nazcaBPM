@@ -6,11 +6,10 @@
 
 #include <ranges>
 
-Geometry::Geometry(std::vector<Shape> shapes, const double background_index) : m_background_index(background_index) {
+Geometry::Geometry(const std::vector<Shape> &shapes, const double background_index) : m_background_index(background_index) {
     m_shapes = shapes;
 }
 
-//todo: distinguish between xyz coordinates of nazca and that of the BPM!
 double Geometry::get_index(const double x, const double y, const double z) const {
     // loop over all shapes, search for a hit of x,y,z.
     for (const auto &shape: std::ranges::views::reverse(m_shapes)) {
@@ -23,7 +22,7 @@ double Geometry::get_index(const double x, const double y, const double z) const
     return m_background_index;
 }
 
-bool Geometry::point_in_shape(double x, double y, double z, const Shape &shape) const {
+bool Geometry::point_in_shape(const double x, const double y, const double z, const Shape &shape) const {
     if (z < shape.zmin || z > shape.zmax) {
         //definitely not inside the shape.
         return false;

@@ -7,7 +7,6 @@ Todo items:
 - Add exception handling.
 - Implement a semi-vectorial version.
 - Implement conformal mapping, to handle bends? If you cut up the bend into a series of circular arc segments you can model any kind of spline, including cobras and euler bends.
-- Change coordinates of the BPM so that they are the same as those in nazca/klayout. This is more intuitive to the user.
 - Add folder with documentation on the derivation of the method, and its pros and cons over other simulation techniques.
 - Once the code is more mature, add more docs on how to use it. Use Sphinx or mkdocs.
 - Make it optional to export the refractive index and field in slices. This is useful initially when setting up a simulation to verify that it models what you think it does. But it does not make sense to export this for all 10^5 simulations in the sweep. So for the other 99999 simulations just export the mode overlaps at the output. If you are worried about flying blind and modeling the wrong thing, just rerun the final optimized scenario with output of the fields to check.

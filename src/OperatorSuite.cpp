@@ -37,45 +37,45 @@ std::complex<double> OperatorSuite::apply_right_hand_operator(const double posit
 
 
 multi_array<std::complex<double>, 2> OperatorSuite::get_rhs(const multi_array<std::complex<double>, 2> &field,
-                                                            const std::vector<double> &xgrid,
                                                             const std::vector<double> &ygrid,
+                                                            const std::vector<double> &zgrid,
                                                             const multi_array<double, 2> &index,
                                                             const double reference_index, const double k0,
                                                             const std::complex<double> preFactor,
-                                                            const PML *pmlxPtr, const PML *pmlyPtr) {
-    int numx = static_cast<int>(xgrid.size());
+                                                            const PML *pmlyPtr, const PML *pmlzPtr) {
     int numy = static_cast<int>(ygrid.size());
+    int numz = static_cast<int>(zgrid.size());
 
     //right hand side vector
-    multi_array<std::complex<double>, 2> rhs1(extents[numx][numy]);
-    // apply the operator (1+p*Gy)
-    for (int i = 0; i < numx; i++) {
-        for (int j = 0; j < numy; j++) {
-            if (i == 0 || j == 0 || i == numx - 1 || j == numy - 1) {
+    multi_array<std::complex<double>, 2> rhs1(extents[numy][numz]);
+    // apply the operator (1+p*Gz)
+    for (int i = 0; i < numy; i++) {
+        for (int j = 0; j < numz; j++) {
+            if (i == 0 || j == 0 || i == numy - 1 || j == numz - 1) {
                 //ignore boundary values.
                 rhs1[i][j] = std::complex<double>{0.0, 0.0};
             } else {
                 // x value on the mid-point and neighbors is the same, as we only apply the derivative in y direction here.
-                rhs1[i][j] = apply_right_hand_operator(ygrid[j], ygrid[j - 1],
-                                                       ygrid[j + 1], index[i][j], index[i][j - 1], index[i][j + 1],
+                rhs1[i][j] = apply_right_hand_operator(zgrid[j], zgrid[j - 1],
+                                                       zgrid[j + 1], index[i][j], index[i][j - 1], index[i][j + 1],
                                                        reference_index, k0, preFactor,
                                                        field[i][j], field[i][j - 1], field[i][j + 1],
-                                                       pmlyPtr);
+                                                       pmlzPtr);
             }
         }
     }
-    //now apply the operator (1+p*Gx)
-    multi_array<std::complex<double>, 2> rhs2(extents[numx][numy]);
-    for (int i = 0; i < numx; i++) {
-        for (int j = 0; j < numy; j++) {
-            if (i == 0 || j == 0 || i == numx - 1 || j == numy - 1) {
+    //now apply the operator (1+p*Gy)
+    multi_array<std::complex<double>, 2> rhs2(extents[numy][numz]);
+    for (int i = 0; i < numy; i++) {
+        for (int j = 0; j < numz; j++) {
+            if (i == 0 || j == 0 || i == numy - 1 || j == numz - 1) {
                 //ignore boundary values.
                 rhs2[i][j] = std::complex<double>{0.0, 0.0};
             } else {
                 // y value on the mid-point and neighbors is the same, as we only apply the derivative in x direction here.
-                rhs2[i][j] = apply_right_hand_operator(xgrid[i], xgrid[i - 1], xgrid[i + 1], index[i][j],
+                rhs2[i][j] = apply_right_hand_operator(ygrid[i], ygrid[i - 1], ygrid[i + 1], index[i][j],
                                                        index[i - 1][j], index[i + 1][j], reference_index, k0, preFactor,
-                                                       rhs1[i][j], rhs1[i - 1][j], rhs1[i + 1][j], pmlxPtr);
+                                                       rhs1[i][j], rhs1[i - 1][j], rhs1[i + 1][j], pmlyPtr);
             }
         }
     }
@@ -95,7 +95,7 @@ std::vector<std::complex<double> > OperatorSuite::solve_system(const std::vector
                                                                const std::vector<std::complex<double> > &rhs_slice,
                                                                const PML *pmlPtr) {
     const auto size = rhs_slice.size();
-    const double neighbor_distance = position_forward[0]-position_mid[0];
+    const double neighbor_distance = position_forward[0] - position_mid[0];
     // compute matrix entries
     std::vector<std::complex<double> > lower_diag(size - 1);
     std::vector<std::complex<double> > diag(size);

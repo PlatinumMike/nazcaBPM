@@ -11,6 +11,7 @@
 
 #include "ModeHandler.h"
 #include "PML.h"
+#include "RectangularGrid.h"
 using boost::multi_array;
 
 // todo: for the current implementation many arrays are copied at every iteration.
@@ -19,8 +20,8 @@ using boost::multi_array;
 
 class Solver {
 public:
-    Solver(const Geometry &geometry, const PML &pmlx, const PML &pmly, const ModeHandler &source, double xmin,
-           double xmax, double ymin, double ymax, double zmin, double zmax, int numx, int numy, int numz,
+    Solver(const Geometry &geometry, const PML &pmlx, const PML &pmly, const ModeHandler &source,
+           const RectangularGrid &grid,
            double scheme_parameter, double k0, double reference_index);
 
     void run();
@@ -28,52 +29,31 @@ public:
     multi_array<double, 2> get_intensity(const multi_array<std::complex<double>, 2> &field) const;
 
 private:
-    //default values grid
-    double xmin = 0.0;
-    double xmax = 0.0;
-    double ymin = 0.0;
-    double ymax = 0.0;
-    double zmin = 0.0;
-    double zmax = 0.0;
-    int numx = 0;
-    int numy = 0;
-    int numz = 0;
-    double dx = 0.0;
-    double dy = 0.0;
-    double dz = 0.0;
     double scheme_parameter = 0.5;
     double k0;
     double reference_index;
     // pointers to simulation objects
     const Geometry *geometryPtr;
-    const PML *pmlxPtr;
     const PML *pmlyPtr;
+    const PML *pmlzPtr;
     const ModeHandler *sourcePtr;
+    const RectangularGrid *gridPtr;
 
-    [[nodiscard]] double get_refractive_index(double x_bpm, double y_bpm, double z_bpm) const;
 
     void record_slice(const multi_array<std::complex<double>, 2> &buffer,
-                      multi_array<std::complex<double>, 2> &storage, int idz, bool slice_x) const;
+                      multi_array<std::complex<double>, 2> &storage, int idx, bool slice_y) const;
 
-    void dump_index_slice(const std::string &filename, char direction, double slice_position,
-                          const std::vector<double> &grid_coordinate1,
-                          const std::vector<double> &grid_coordinate2) const;
-
-    static multi_array<double, 1> vector_to_multi_array(const std::vector<double> &vec) ;
+    void dump_index_slice(const std::string &filename, char direction, double slice_position) const;
 
     /**
      * Do one step in propagation direction with the Crank-Nicolson scheme
      * @param field old field value. This value is not modified.
-     * @param xgrid grid in x direction
-     * @param ygrid grid in y direction
-     * @param z position along the propagation direction
-     * @param dz step size in propagation direction
+     * @param x position along the propagation direction
+     * @param dx step size in propagation direction
      * @return new field value
      */
-    multi_array<std::complex<double>, 2> do_step_cn(const multi_array<std::complex<double>, 2> &field,
-                                                    const std::vector<double> &xgrid, const std::vector<double> &ygrid,
-                                                    double z,
-                                                    double dz) const;
+    multi_array<std::complex<double>, 2> do_step_cn(const multi_array<std::complex<double>, 2> &field, double x,
+                                                    double dx) const;
 };
 
 

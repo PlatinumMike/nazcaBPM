@@ -14,18 +14,18 @@ public:
 
     /**
      * Generates a 2D Gaussian profile
-     * @param xgrid grid of x positions
      * @param ygrid grid of y positions
-     * @param x0 center of Gaussian in x
+     * @param zgrid grid of z positions
      * @param y0 center of Gaussian in y
-     * @param std_x standard deviation in x
+     * @param z0 center of Gaussian in z
      * @param std_y standard deviation in y
+     * @param std_z standard deviation in z
      * @return
      */
-    multi_array<std::complex<double>, 2> get_initial_profile(const std::vector<double> &xgrid,
-                                                             const std::vector<double> &ygrid, double x0,
-                                                             double y0, double std_x,
-                                                             double std_y) const;
+    multi_array<std::complex<double>, 2> get_initial_profile(const std::vector<double> &ygrid,
+                                                             const std::vector<double> &zgrid, double y0,
+                                                             double z0, double std_y,
+                                                             double std_z) const;
 
 private:
     std::string type;
