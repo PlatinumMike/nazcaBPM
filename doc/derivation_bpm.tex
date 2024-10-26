@@ -318,6 +318,8 @@
 	\end{multline}
 	
 	
+	Clarification about the BCs: You can choose to set $u$ to zero on the actual wall of the domain. Or set $u=0$ outside the domain, but let the value on the boundary vary freely. The distinction seems irrelevant, since we are interested in open domains anyway. However, the latter approach may be easier to implement, as you do not need to skip over the first and last row+column of the grid. You can just loop over all matrix entries, then where-ever the derivative requires outside information you just use zero. However, this will also require outside information for the index $n$. This is dangerous because the index outside the domain is invisible to the end-user. So we will go with the first option, setting $u=0$ on the actual wall.
+
 	
 	\bibliographystyle{ieeetr}
 	\bibliography{bibliography}
