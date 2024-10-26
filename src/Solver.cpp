@@ -255,9 +255,9 @@ multi_array<std::complex<double>, 2> Solver::do_step_cn(const multi_array<std::c
         std::vector<std::complex<double> > rhs_slice(size);
         //fill vectors
         for (auto array_index = 0; array_index < size; array_index++) {
-            position_mid[array_index] = ygrid[array_index + 1];
-            position_back[array_index] = ygrid[array_index];
-            position_forward[array_index] = ygrid[array_index + 2];
+            position_mid[array_index] = zgrid[array_index + 1];
+            position_back[array_index] = zgrid[array_index];
+            position_forward[array_index] = zgrid[array_index + 2];
             index_mid[array_index] = geometryPtr->get_index(x + dx, ygrid[idy], zgrid[array_index + 1]);
             index_back[array_index] = geometryPtr->get_index(x + dx, ygrid[idy], zgrid[array_index]);
             index_forward[array_index] = geometryPtr->get_index(x + dx, ygrid[idy], zgrid[array_index + 2]);
