@@ -6,6 +6,8 @@
 #include "IO/Readers.h"
 #include "IO/hdf_writer.h"
 #include "OperatorSuite.h"
+#include "IndexMonitor.h"
+#include "FieldMonitor.h"
 
 #include <cmath>
 #include <complex>
@@ -13,10 +15,8 @@
 #include <ostream>
 #include <vector>
 #include <algorithm>
-#include <cassert>
 #include <chrono>
 
-#include <hdf5/serial/H5Cpp.h>
 #include <boost/multi_array.hpp>
 using boost::multi_array;
 using boost::extents;
@@ -46,10 +46,27 @@ void Solver::run() {
     int numz = static_cast<int>(gridPtr->get_numz());
 
 
-    dump_index_slice("index_yz_start.h5", 'x', 0.0);
-    dump_index_slice("index_yz_end.h5", 'x', xgrid.back());
-    dump_index_slice("index_xz.h5", 'y', 0.0);
-    dump_index_slice("index_xy.h5", 'z', 0.0);
+    IndexMonitor monitor_x0(gridPtr->get_ymin(), gridPtr->get_ymax(), gridPtr->get_zmin(), gridPtr->get_zmax(), 'x',
+                            0.0,
+                            numy, numz);
+    monitor_x0.populate(geometryPtr);
+    monitor_x0.save_index("index_yz_start.h5");
+
+    IndexMonitor monitor_x1(gridPtr->get_ymin(), gridPtr->get_ymax(), gridPtr->get_zmin(), gridPtr->get_zmax(), 'x',
+                            xgrid.back(),
+                            numy, numz);
+    monitor_x1.populate(geometryPtr);
+    monitor_x1.save_index("index_yz_end.h5");
+
+    IndexMonitor monitor_y(gridPtr->get_xmin(), gridPtr->get_xmax(), gridPtr->get_zmin(), gridPtr->get_zmax(), 'y', 0.0,
+                           numx, numz);
+    monitor_y.populate(geometryPtr);
+    monitor_y.save_index("index_xz.h5");
+
+    IndexMonitor monitor_z(gridPtr->get_xmin(), gridPtr->get_xmax(), gridPtr->get_ymin(), gridPtr->get_ymax(), 'z', 0.0,
+                           numx, numy);
+    monitor_z.populate(geometryPtr);
+    monitor_z.save_index("index_xy.h5");
 
     //define field in current slice to be "field". Since it is a scalar BPM there is no polarization.
     multi_array<std::complex<double>, 2> field = sourcePtr->get_initial_profile(ygrid, zgrid, 0.0, 0.0, 1.0, 1.0);
@@ -121,58 +138,6 @@ void Solver::record_slice(const multi_array<std::complex<double>, 2> &buffer,
             storage[idx][idy] = buffer[idy][index_zmid];
         }
     }
-}
-
-void Solver::dump_index_slice(const std::string &filename, const char direction, const double slice_position) const {
-    assert(("Slice direction not recognized, use x or y or z", direction=='x' || direction=='y'|| direction=='z'));
-
-    std::vector<double> grid_coordinate1;
-    std::vector<double> grid_coordinate2;
-    std::string label1 = "grid1";
-    std::string label2 = "grid2";
-    if (direction == 'x') {
-        label1 = "ygrid";
-        label2 = "zgrid";
-        grid_coordinate1 = gridPtr->get_ygrid();
-        grid_coordinate2 = gridPtr->get_zgrid();
-    } else if (direction == 'y') {
-        label1 = "xgrid";
-        label2 = "zgrid";
-        grid_coordinate1 = gridPtr->get_xgrid();
-        grid_coordinate2 = gridPtr->get_zgrid();
-    } else {
-        label1 = "xgrid";
-        label2 = "ygrid";
-        grid_coordinate1 = gridPtr->get_xgrid();
-        grid_coordinate2 = gridPtr->get_ygrid();
-    }
-
-    const int num1 = static_cast<int>(grid_coordinate1.size());
-    const int num2 = static_cast<int>(grid_coordinate2.size());
-    multi_array<double, 2> index_dataset(extents[num1][num2]);
-    for (int index1 = 0; index1 < num1; index1++) {
-        for (int index2 = 0; index2 < num2; index2++) {
-            if (direction == 'x') {
-                index_dataset[index1][index2] = geometryPtr->get_index(slice_position, grid_coordinate1[index1],
-                                                                       grid_coordinate2[index2]);
-            } else if (direction == 'y') {
-                index_dataset[index1][index2] = geometryPtr->get_index(grid_coordinate1[index1], slice_position,
-                                                                       grid_coordinate2[index2]);
-            } else {
-                index_dataset[index1][index2] = geometryPtr->get_index(grid_coordinate1[index1],
-                                                                       grid_coordinate2[index2],
-                                                                       slice_position);
-            }
-        }
-    }
-
-    const auto grid1 = RectangularGrid::vector_to_multi_array(grid_coordinate1);
-    const auto grid2 = RectangularGrid::vector_to_multi_array(grid_coordinate2);
-    H5::H5File file(filename, H5F_ACC_TRUNC);
-    write_hdf5(file, "refractive_index", index_dataset);
-    write_hdf5(file, label1, grid1);
-    write_hdf5(file, label2, grid2);
-    file.close();
 }
 
 

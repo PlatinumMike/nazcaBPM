@@ -34,7 +34,11 @@ add_executable(${EXENAME} src/main.cpp
         src/OperatorSuite.cpp
         src/OperatorSuite.h
         src/RectangularGrid.cpp
-        src/RectangularGrid.h)
+        src/RectangularGrid.h
+        src/IndexMonitor.cpp
+        src/IndexMonitor.h
+        src/FieldMonitor.cpp
+        src/FieldMonitor.h)
 
 target_link_libraries(${EXENAME} PRIVATE HDF5::HDF5)
 target_link_libraries(${EXENAME} PRIVATE Boost::boost)
@@ -49,6 +53,10 @@ if (ENABLE_TEST)
             src/PML.h
             src/OperatorSuite.cpp
             src/OperatorSuite.h
+            src/IndexMonitor.cpp
+            src/IndexMonitor.h
+            src/FieldMonitor.cpp
+            src/FieldMonitor.h
     )
 endif ()
 

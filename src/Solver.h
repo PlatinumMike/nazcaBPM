@@ -43,7 +43,7 @@ private:
     void record_slice(const multi_array<std::complex<double>, 2> &buffer,
                       multi_array<std::complex<double>, 2> &storage, int idx, bool slice_y) const;
 
-    void dump_index_slice(const std::string &filename, char direction, double slice_position) const;
+
 
     /**
      * Do one step in propagation direction with the Crank-Nicolson scheme
@@ -52,7 +52,7 @@ private:
      * @param dx step size in propagation direction
      * @return new field value
      */
-    multi_array<std::complex<double>, 2> do_step_cn(const multi_array<std::complex<double>, 2> &field, double x,
+    [[nodiscard]] multi_array<std::complex<double>, 2> do_step_cn(const multi_array<std::complex<double>, 2> &field, double x,
                                                     double dx) const;
 };
 
