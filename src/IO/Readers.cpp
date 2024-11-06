@@ -31,6 +31,7 @@ Parameters Readers::readJSON(const std::string &inputFileName) {
         inputs.pml_strength = root.get<double>("pml_strength");
         inputs.pml_thickness = root.get<double>("pml_thickness");
         inputs.scheme_parameter = root.get<double>("scheme_parameter");
+        inputs.dry_run = root.get<bool>("dry_run");
 
 
         //compute derived quantities

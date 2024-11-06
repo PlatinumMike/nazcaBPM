@@ -8,6 +8,8 @@ Loading and plotting the field data
 @author: mike
 """
 
+import os
+
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
@@ -35,15 +37,18 @@ def get_field(filename: str, grid1: str, grid2: str):
 
 
 # %% load files
-field_yz_start = get_field("../build/field_yz_start.h5", "ygrid", "zgrid")
-field_yz_end = get_field("../build/field_yz_end.h5", "ygrid", "zgrid")
-field_xz = get_field("../build/field_xz.h5", "xgrid", "zgrid")
-field_xy = get_field("../build/field_xy.h5", "xgrid", "ygrid")
 
-index_yz_start = get_index("../build/index_yz_start.h5", "ygrid", "zgrid")
-index_yz_end = get_index("../build/index_yz_end.h5", "ygrid", "zgrid")
-index_xy = get_index("../build/index_xy.h5", "xgrid", "ygrid")
-index_xz = get_index("../build/index_xz.h5", "xgrid", "zgrid")
+dirname = os.path.dirname(__file__)
+build_dir = os.path.join(os.path.dirname(dirname), "build")
+field_yz_start = get_field(os.path.join(build_dir, "field_yz_start.h5"), "ygrid", "zgrid")
+field_yz_end = get_field(os.path.join(build_dir, "field_yz_end.h5"), "ygrid", "zgrid")
+field_xz = get_field(os.path.join(build_dir, "field_xz.h5"), "xgrid", "zgrid")
+field_xy = get_field(os.path.join(build_dir, "field_xy.h5"), "xgrid", "ygrid")
+
+index_yz_start = get_index(os.path.join(build_dir, "index_yz_start.h5"), "ygrid", "zgrid")
+index_yz_end = get_index(os.path.join(build_dir, "index_yz_end.h5"), "ygrid", "zgrid")
+index_xy = get_index(os.path.join(build_dir, "index_xy.h5"), "xgrid", "ygrid")
+index_xz = get_index(os.path.join(build_dir, "index_xz.h5"), "xgrid", "zgrid")
 
 xend = field_xz["xgrid"][-1]
 

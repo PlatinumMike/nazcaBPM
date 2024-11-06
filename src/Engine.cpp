@@ -18,7 +18,7 @@
 
 
 Engine::Engine(const std::string &inputFileName) {
-    std::cout << "Launching new engine now" << std::endl;
+    std::cout << "Initializing engine" << std::endl;
     //initialize
     _inputs = Readers::readJSON(inputFileName);
 
@@ -77,7 +77,10 @@ void Engine::run() const {
     monitor_z.populate(geometry);
     monitor_z.save_index("index_xy.h5");
 
-
+    if (inputs.dry_run) {
+        std::cout << "Finished dry run." << std::endl;
+        return;
+    }
 
     Solver solver(geometry, pmly, pmlz, gaussianSource, grid, inputs.scheme_parameter, inputs.k0,
                   inputs.reference_index);

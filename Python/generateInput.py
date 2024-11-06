@@ -2,6 +2,7 @@
 Generate input for BPM model.
 """
 
+import os
 import json
 
 # user inputs:
@@ -30,7 +31,7 @@ taper = {
         (20 + taper_length, width2 / 2),
         (10 + taper_length, width2 / 2),
         (10, width1 / 2),
-        (0.1, width1 / 2),
+        (-0.1, width1 / 2),
     ],
 }
 # adding a straight waveguide
@@ -64,14 +65,16 @@ dataDict = {
     "pml_thickness": 1.0,
     "shapes": shapes,
     "scheme_parameter": 0.5,
+    "dry_run": False,
 }
 
 # convert to JSON
 jsonDict = json.dumps(dataDict, indent=2, sort_keys=True)
 
 # write to disk
-with open(jsonFileName, "w") as text_file:
+fname = os.path.abspath(jsonFileName)
+with open(fname, "w") as text_file:
     text_file.write(jsonDict)
 
 # finished
-print("json file created")
+print(f"json file {fname} created")

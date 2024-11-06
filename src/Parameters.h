@@ -8,7 +8,6 @@
 #include "Geometry.h"
 
 struct Parameters {
-
     double background_index; //background refractive index
     double max_index; //maximum refractive index in the entire domain
     double wl; //vacuum wavelength (um)
@@ -33,6 +32,11 @@ struct Parameters {
 
     double pml_strength; //max conductivity inside the PML
     double pml_thickness; //thickness of the PML (um)
+
+    // If dry_run is true, just load the parameters, evaluate refractive index on the grid and exit the program.
+    // This is useful before launching a big simulation. You want to know if you are modeling the correct thing before launching into a long run.
+    bool dry_run;
+
 
     std::vector<Shape> shapes;
 
