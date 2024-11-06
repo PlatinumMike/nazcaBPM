@@ -3,8 +3,6 @@
 //
 
 #include "Solver.h"
-#include "IO/Readers.h"
-#include "IO/hdf_writer.h"
 #include "OperatorSuite.h"
 #include "FieldMonitor.h"
 
@@ -47,13 +45,23 @@ void Solver::run() {
     //define field in current slice to be "field". Since it is a scalar BPM there is no polarization.
     multi_array<std::complex<double>, 2> field = sourcePtr->get_initial_profile(ygrid, zgrid, 0.0, 0.0, 1.0, 1.0);
 
-    write_cmplx_hdf5("field_yz_start.h5", field, ygrid_m, zgrid_m, 'x');
+    FieldMonitor start_field(gridPtr->get_ymin(), gridPtr->get_ymax(), gridPtr->get_zmin(), gridPtr->get_zmax(), 'x',
+                             0.0,
+                             numy, numz);
+    start_field.populate(ygrid, zgrid, field, 0);
+    start_field.save_data("field_yz_start.h5");
 
-    multi_array<std::complex<double>, 2> field_slice_xz(extents[numx][numz]);
-    multi_array<std::complex<double>, 2> field_slice_xy(extents[numx][numy]);
-    record_slice(field, field_slice_xz, 0, true);
-    record_slice(field, field_slice_xy, 0, false);
+    //slice at z=0
+    FieldMonitor field_slice_xy(gridPtr->get_xmin(), gridPtr->get_xmax(), gridPtr->get_ymin(), gridPtr->get_ymax(), 'z',
+                                0.0,
+                                numx, numy);
+    field_slice_xy.populate(ygrid, zgrid, field, 0);
 
+    //slice at y=0
+    FieldMonitor field_slice_xz(gridPtr->get_xmin(), gridPtr->get_xmax(), gridPtr->get_zmin(), gridPtr->get_zmax(), 'y',
+                                0.0,
+                                numx, numz);
+    field_slice_xz.populate(ygrid, zgrid, field, 0);
 
     const int index_1percent = numx / 100;
     const int index_10percent = numx / 10;
@@ -63,8 +71,8 @@ void Solver::run() {
     for (int x_step = 1; x_step < numx; x_step++) {
         const double current_x = xgrid[x_step - 1];
         field = do_step_cn(field, current_x, gridPtr->get_dx());
-        record_slice(field, field_slice_xz, x_step, true);
-        record_slice(field, field_slice_xy, x_step, false);
+        field_slice_xy.populate(ygrid, zgrid, field, x_step);
+        field_slice_xz.populate(ygrid, zgrid, field, x_step);
         //printing rough indication of simulation progress
         if (x_step == index_1percent) {
             std::cout << "1% reached" << std::endl;
@@ -93,29 +101,14 @@ void Solver::run() {
     auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
     std::cout << "Elapsed time = " << delta << " (s)" << std::endl;
 
-    write_cmplx_hdf5("field_yz_end.h5", field, ygrid_m, zgrid_m, 'x');
-    write_cmplx_hdf5("field_xy.h5", field_slice_xy, xgrid_m, ygrid_m, 'z');
-    write_cmplx_hdf5("field_xz.h5", field_slice_xz, xgrid_m, zgrid_m, 'y');
+    FieldMonitor end_field(gridPtr->get_ymin(), gridPtr->get_ymax(), gridPtr->get_zmin(), gridPtr->get_zmax(), 'x', 0.0,
+                           numy, numz);
+    end_field.populate(ygrid, zgrid, field, 0);
+    end_field.save_data("field_yz_end.h5");
+
+    field_slice_xy.save_data("field_xy.h5");
+    field_slice_xz.save_data("field_xz.h5");
 }
-
-void Solver::record_slice(const multi_array<std::complex<double>, 2> &buffer,
-                          multi_array<std::complex<double>, 2> &storage, const int idx, const bool slice_y) const {
-    int numy = static_cast<int>(gridPtr->get_numy());
-    int numz = static_cast<int>(gridPtr->get_numz());
-
-    if (slice_y) {
-        const int index_ymid = numy / 2; //xz slice at y=0 approximately
-        for (int idz = 0; idz < numz; idz++) {
-            storage[idx][idz] = buffer[index_ymid][idz];
-        }
-    } else {
-        const int index_zmid = numz / 2; //yx slice at z=0 approximately
-        for (int idy = 0; idy < numy; idy++) {
-            storage[idx][idy] = buffer[idy][index_zmid];
-        }
-    }
-}
-
 
 // todo: error prone to skip over boundary points. off by one in the array indexing can easily occur.
 // suggested solution: include the boundary points in the matrix, but overrule that row, and rhs entry to force the solution to zero on the edges.

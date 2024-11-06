@@ -32,7 +32,7 @@ public:
 
     double get_min_index();
 
-    void save_index(const std::string &filename) const;
+    void save_data(const std::string &filename) const;
 
 private:
     const double coordinate1min;
@@ -47,6 +47,8 @@ private:
 
     std::vector<double> grid1;
     std::vector<double> grid2;
+    std::string label1 = "grid1";
+    std::string label2 = "grid2";
 
     boost::multi_array<double, 2> index_dataset;
 };

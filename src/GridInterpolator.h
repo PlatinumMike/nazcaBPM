@@ -18,7 +18,7 @@ template<typename T>
 
 class GridInterpolator {
 public:
-    GridInterpolator(std::vector<double> gridCoordinate1, std::vector<double> gridCoordinate2,
+    GridInterpolator(const std::vector<double>& gridCoordinate1, const std::vector<double>& gridCoordinate2,
                      boost::multi_array<T, 2> data, T defaultValue);
 
     T get_value(double coordinate1, double coordinate2) const;
@@ -37,8 +37,8 @@ private:
 
 
 template<typename T>
-GridInterpolator<T>::GridInterpolator(std::vector<double> gridCoordinate1, std::vector<double> gridCoordinate2,
-                                      boost::multi_array<T, 2> data, T defaultValue) {
+GridInterpolator<T>::GridInterpolator(const std::vector<double>& gridCoordinate1, const std::vector<double>& gridCoordinate2,
+                                      const boost::multi_array<T, 2> data, T defaultValue) {
     assert(("array size does not match grid size, dimension 0", data.shape()[0]==gridCoordinate1.size()));
     assert(("array size does not match grid size, dimension 1", data.shape()[1]==gridCoordinate2.size()));
     m_gridCoordinate1 = gridCoordinate1;

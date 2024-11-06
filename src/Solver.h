@@ -40,11 +40,6 @@ private:
     const RectangularGrid *gridPtr;
 
 
-    void record_slice(const multi_array<std::complex<double>, 2> &buffer,
-                      multi_array<std::complex<double>, 2> &storage, int idx, bool slice_y) const;
-
-
-
     /**
      * Do one step in propagation direction with the Crank-Nicolson scheme
      * @param field old field value. This value is not modified.
@@ -52,8 +47,9 @@ private:
      * @param dx step size in propagation direction
      * @return new field value
      */
-    [[nodiscard]] multi_array<std::complex<double>, 2> do_step_cn(const multi_array<std::complex<double>, 2> &field, double x,
-                                                    double dx) const;
+    [[nodiscard]] multi_array<std::complex<double>, 2> do_step_cn(const multi_array<std::complex<double>, 2> &field,
+                                                                  double x,
+                                                                  double dx) const;
 };
 
 

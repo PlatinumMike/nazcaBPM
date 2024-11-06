@@ -12,8 +12,6 @@ add_executable(${EXENAME} src/main.cpp
         src/Engine.h
         src/AuxiliaryFunctions.cpp
         src/AuxiliaryFunctions.h
-        src/IO/Writers.cpp
-        src/IO/Writers.h
         src/TriDiag.h
         src/IO/Readers.cpp
         src/IO/Readers.h
@@ -23,7 +21,6 @@ add_executable(${EXENAME} src/main.cpp
         src/Polygon.cpp
         src/Polygon.h
         src/IO/hdf_writer.h
-        src/GridInterpolator.cpp
         src/GridInterpolator.h
         src/Solver.cpp
         src/Solver.h
@@ -43,20 +40,15 @@ add_executable(${EXENAME} src/main.cpp
 target_link_libraries(${EXENAME} PRIVATE HDF5::HDF5)
 target_link_libraries(${EXENAME} PRIVATE Boost::boost)
 
-#set(ENABLE_TEST 1)
+set(ENABLE_TEST 1)
 
 if (ENABLE_TEST)
     add_executable(testSuite.x test/test.cpp src/TriDiag.h src/Polygon.cpp src/Polygon.h src/AuxiliaryFunctions.cpp src/AuxiliaryFunctions.h src/Geometry.cpp src/Geometry.h
-            src/GridInterpolator.cpp
             src/GridInterpolator.h
             src/PML.cpp
             src/PML.h
             src/OperatorSuite.cpp
             src/OperatorSuite.h
-            src/IndexMonitor.cpp
-            src/IndexMonitor.h
-            src/FieldMonitor.cpp
-            src/FieldMonitor.h
     )
 endif ()
 

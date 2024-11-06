@@ -5,7 +5,6 @@
 #include "IndexMonitor.h"
 #include "AuxiliaryFunctions.h"
 #include "RectangularGrid.h"
-#include <hdf5/serial/H5Cpp.h>
 #include "IO/hdf_writer.h"
 
 #include <cassert>
@@ -33,6 +32,21 @@ IndexMonitor::IndexMonitor(const double coordinate1min, const double coordinate1
 
     grid1 = AuxiliaryFunctions::linspace(coordinate1min, coordinate1max, resolution1);
     grid2 = AuxiliaryFunctions::linspace(coordinate2min, coordinate2max, resolution2);
+
+    if (orientation == 'x') {
+        label1 = "ygrid";
+        label2 = "zgrid";
+    } else if (orientation == 'y') {
+        label1 = "xgrid";
+        label2 = "zgrid";
+    } else {
+        label1 = "xgrid";
+        label2 = "ygrid";
+    }
+
+    const int num1 = static_cast<int>(grid1.size());
+    const int num2 = static_cast<int>(grid2.size());
+    index_dataset.resize(boost::extents[num1][num2]);
 }
 
 void IndexMonitor::populate(const Geometry &geometryPtr) {
@@ -41,21 +55,18 @@ void IndexMonitor::populate(const Geometry &geometryPtr) {
         return;
     }
 
-    const int num1 = static_cast<int>(grid1.size());
-    const int num2 = static_cast<int>(grid2.size());
-    index_dataset.resize(boost::extents[num1][num2]);
-    for (int index1 = 0; index1 < num1; index1++) {
-        for (int index2 = 0; index2 < num2; index2++) {
+    for (auto index1 = 0; index1 < index_dataset.shape()[0]; index1++) {
+        for (auto index2 = 0; index2 < index_dataset.shape()[1]; index2++) {
             if (orientation == 'x') {
                 index_dataset[index1][index2] = geometryPtr.get_index(slice_position, grid1[index1],
-                                                                       grid2[index2]);
+                                                                      grid2[index2]);
             } else if (orientation == 'y') {
                 index_dataset[index1][index2] = geometryPtr.get_index(grid1[index1], slice_position,
-                                                                       grid2[index2]);
+                                                                      grid2[index2]);
             } else {
                 index_dataset[index1][index2] = geometryPtr.get_index(grid1[index1],
-                                                                       grid2[index2],
-                                                                       slice_position);
+                                                                      grid2[index2],
+                                                                      slice_position);
             }
         }
     }
@@ -82,22 +93,10 @@ double IndexMonitor::get_min_index() {
     return min;
 }
 
-void IndexMonitor::save_index(const std::string &filename) const {
+void IndexMonitor::save_data(const std::string &filename) const {
     if (!(populated)) {
         printf("Index monitor not yet populated! Cannot save. Skipping\n");
         return;
-    }
-    std::string label1 = "grid1";
-    std::string label2 = "grid2";
-    if (orientation == 'x') {
-        label1 = "ygrid";
-        label2 = "zgrid";
-    } else if (orientation == 'y') {
-        label1 = "xgrid";
-        label2 = "zgrid";
-    } else {
-        label1 = "xgrid";
-        label2 = "ygrid";
     }
     const auto grid1_m = RectangularGrid::vector_to_multi_array(grid1);
     const auto grid2_m = RectangularGrid::vector_to_multi_array(grid2);
