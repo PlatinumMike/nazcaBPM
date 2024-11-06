@@ -26,7 +26,7 @@ public:
     IndexMonitor(double coordinate1min, double coordinate1max, double coordinate2min, double coordinate2max,
                  char orientation, double slice_position, int resolution1, int resolution2);
 
-    void populate(const Geometry *geometryPtr);
+    void populate(const Geometry &geometryPtr);
 
     double get_max_index();
 

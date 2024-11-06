@@ -8,6 +8,7 @@
 #include "PML.h"
 #include "ModeHandler.h"
 #include "AuxiliaryFunctions.h"
+#include "IndexMonitor.h"
 
 #include <iostream>
 #include <ostream>
@@ -52,6 +53,30 @@ void Engine::run() const {
     const PML pmlz(inputs.pml_thickness, inputs.pml_strength, grid.get_zmin(), grid.get_zmax());
     // setup mode source
     const ModeHandler gaussianSource("Gaussian");
+
+    // Define index monitors.
+    IndexMonitor monitor_x0(grid.get_ymin(), grid.get_ymax(), grid.get_zmin(), grid.get_zmax(), 'x',
+                            0.0,
+                            inputs.numy, inputs.numz);
+    monitor_x0.populate(geometry);
+    monitor_x0.save_index("index_yz_start.h5");
+
+    IndexMonitor monitor_x1(grid.get_ymin(), grid.get_ymax(), grid.get_zmin(), grid.get_zmax(), 'x',
+                            xgrid.back(),
+                            inputs.numy, inputs.numz);
+    monitor_x1.populate(geometry);
+    monitor_x1.save_index("index_yz_end.h5");
+
+    IndexMonitor monitor_y(grid.get_xmin(), grid.get_xmax(), grid.get_zmin(), grid.get_zmax(), 'y', 0.0,
+                           inputs.numx, inputs.numz);
+    monitor_y.populate(geometry);
+    monitor_y.save_index("index_xz.h5");
+
+    IndexMonitor monitor_z(grid.get_xmin(), grid.get_xmax(), grid.get_ymin(), grid.get_ymax(), 'z', 0.0,
+                           inputs.numx, inputs.numy);
+    monitor_z.populate(geometry);
+    monitor_z.save_index("index_xy.h5");
+
 
 
     Solver solver(geometry, pmly, pmlz, gaussianSource, grid, inputs.scheme_parameter, inputs.k0,

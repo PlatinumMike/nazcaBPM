@@ -35,7 +35,7 @@ IndexMonitor::IndexMonitor(const double coordinate1min, const double coordinate1
     grid2 = AuxiliaryFunctions::linspace(coordinate2min, coordinate2max, resolution2);
 }
 
-void IndexMonitor::populate(const Geometry *geometryPtr) {
+void IndexMonitor::populate(const Geometry &geometryPtr) {
     if (populated) {
         printf("Index monitor already populated! Skipping\n");
         return;
@@ -47,13 +47,13 @@ void IndexMonitor::populate(const Geometry *geometryPtr) {
     for (int index1 = 0; index1 < num1; index1++) {
         for (int index2 = 0; index2 < num2; index2++) {
             if (orientation == 'x') {
-                index_dataset[index1][index2] = geometryPtr->get_index(slice_position, grid1[index1],
+                index_dataset[index1][index2] = geometryPtr.get_index(slice_position, grid1[index1],
                                                                        grid2[index2]);
             } else if (orientation == 'y') {
-                index_dataset[index1][index2] = geometryPtr->get_index(grid1[index1], slice_position,
+                index_dataset[index1][index2] = geometryPtr.get_index(grid1[index1], slice_position,
                                                                        grid2[index2]);
             } else {
-                index_dataset[index1][index2] = geometryPtr->get_index(grid1[index1],
+                index_dataset[index1][index2] = geometryPtr.get_index(grid1[index1],
                                                                        grid2[index2],
                                                                        slice_position);
             }

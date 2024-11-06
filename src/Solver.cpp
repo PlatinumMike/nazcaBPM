@@ -6,7 +6,6 @@
 #include "IO/Readers.h"
 #include "IO/hdf_writer.h"
 #include "OperatorSuite.h"
-#include "IndexMonitor.h"
 #include "FieldMonitor.h"
 
 #include <cmath>
@@ -44,29 +43,6 @@ void Solver::run() {
     int numx = static_cast<int>(gridPtr->get_numx());
     int numy = static_cast<int>(gridPtr->get_numy());
     int numz = static_cast<int>(gridPtr->get_numz());
-
-
-    IndexMonitor monitor_x0(gridPtr->get_ymin(), gridPtr->get_ymax(), gridPtr->get_zmin(), gridPtr->get_zmax(), 'x',
-                            0.0,
-                            numy, numz);
-    monitor_x0.populate(geometryPtr);
-    monitor_x0.save_index("index_yz_start.h5");
-
-    IndexMonitor monitor_x1(gridPtr->get_ymin(), gridPtr->get_ymax(), gridPtr->get_zmin(), gridPtr->get_zmax(), 'x',
-                            xgrid.back(),
-                            numy, numz);
-    monitor_x1.populate(geometryPtr);
-    monitor_x1.save_index("index_yz_end.h5");
-
-    IndexMonitor monitor_y(gridPtr->get_xmin(), gridPtr->get_xmax(), gridPtr->get_zmin(), gridPtr->get_zmax(), 'y', 0.0,
-                           numx, numz);
-    monitor_y.populate(geometryPtr);
-    monitor_y.save_index("index_xz.h5");
-
-    IndexMonitor monitor_z(gridPtr->get_xmin(), gridPtr->get_xmax(), gridPtr->get_ymin(), gridPtr->get_ymax(), 'z', 0.0,
-                           numx, numy);
-    monitor_z.populate(geometryPtr);
-    monitor_z.save_index("index_xy.h5");
 
     //define field in current slice to be "field". Since it is a scalar BPM there is no polarization.
     multi_array<std::complex<double>, 2> field = sourcePtr->get_initial_profile(ygrid, zgrid, 0.0, 0.0, 1.0, 1.0);
