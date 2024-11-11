@@ -18,6 +18,7 @@
 // Also, it needs to have way to normalize the field, such that <u,u> = 1. void normalize_field();
 // And it should be able to compute modes.
 // Actually, this does not need to be part of the field monitor, but it should be for a port.
+// initially we may assume that ports can only have x orientation, and can only be placed at x=xmin or x=xmax.
 
 // TODO: lots of duplicate code with the index monitor, use inheritance?
 

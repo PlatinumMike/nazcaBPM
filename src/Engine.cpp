@@ -4,11 +4,13 @@
 
 #include "Engine.h"
 #include "IO/Readers.h"
-#include "Solver.h"
 #include "PML.h"
 #include "ModeHandler.h"
 #include "AuxiliaryFunctions.h"
 #include "IndexMonitor.h"
+#include "BpmSolver.h"
+#include "ModeSolver.h"
+#include "Port.h"
 
 #include <iostream>
 #include <ostream>
@@ -31,17 +33,12 @@ Engine::Engine(const std::string &inputFileName) {
 void Engine::run() const {
     const Parameters inputs = _inputs; //make a const copy, to avoid accidental modification of input variables.
 
-    // setup grid
-    const double x_min = 0.0;
-    const double x_max = inputs.domain_len_x;
-    const double y_min = -0.5 * inputs.domain_len_y;
-    const double y_max = 0.5 * inputs.domain_len_y;
-    const double z_min = -0.5 * inputs.domain_len_z;
-    const double z_max = 0.5 * inputs.domain_len_z;
+    //TODO: loop over ports in input file, then for each do a mini simulation to get the modes.
+    // then use one of those ports as the mode source for the real simulation.
 
-    auto xgrid = AuxiliaryFunctions::linspace(x_min, x_max, inputs.numx);
-    auto ygrid = AuxiliaryFunctions::linspace(y_min, y_max, inputs.numy);
-    auto zgrid = AuxiliaryFunctions::linspace(z_min, z_max, inputs.numz);
+    auto xgrid = AuxiliaryFunctions::linspace(inputs.xmin, inputs.xmax, inputs.numx);
+    auto ygrid = AuxiliaryFunctions::linspace(inputs.ymin, inputs.ymax, inputs.numy);
+    auto zgrid = AuxiliaryFunctions::linspace(inputs.zmin, inputs.zmax, inputs.numz);
 
     const RectangularGrid grid(xgrid, ygrid, zgrid);
 
@@ -82,8 +79,17 @@ void Engine::run() const {
         return;
     }
 
-    Solver solver(geometry, pmly, pmlz, gaussianSource, grid, inputs.scheme_parameter, inputs.k0,
-                  inputs.reference_index);
-    solver.run();
+    //todo: loop over all in/out ports, get modes, then get input profile and pass that into the BpmSolver.
+    Port inport0("a0", "left", 0.0, 0.0, 0.0, 4.0, 4.0);
+
+    //todo: the mode solver should use a smaller grid that it gets from the port, not same big BPM grid.
+    ModeSolver mode_solver(geometry, pmly, pmlz, gaussianSource, grid, inputs.scheme_parameter, inputs.k0,
+                           inputs.reference_index, inport0);
+    mode_solver.run();
+    auto intial_field = mode_solver.interpolate_field(grid.get_ygrid(), grid.get_zgrid());
+
+    BpmSolver bpm_solver(geometry, pmly, pmlz, grid, inputs.scheme_parameter, inputs.k0,
+                         inputs.reference_index);
+    bpm_solver.run(intial_field);
     //todo: call function solver.save_data() or something to save/extract data after the solve is completed.
 }

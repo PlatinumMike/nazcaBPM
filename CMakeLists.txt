@@ -35,7 +35,13 @@ add_executable(${EXENAME} src/main.cpp
         src/IndexMonitor.cpp
         src/IndexMonitor.h
         src/FieldMonitor.cpp
-        src/FieldMonitor.h)
+        src/FieldMonitor.h
+        src/Port.cpp
+        src/Port.h
+        src/ModeSolver.cpp
+        src/ModeSolver.h
+        src/BpmSolver.cpp
+        src/BpmSolver.h)
 
 target_link_libraries(${EXENAME} PRIVATE HDF5::HDF5)
 target_link_libraries(${EXENAME} PRIVATE Boost::boost)

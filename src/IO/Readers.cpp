@@ -25,9 +25,12 @@ Parameters Readers::readJSON(const std::string &inputFileName) {
         inputs.resolution_x = root.get<int>("resolution_x");
         inputs.resolution_y = root.get<int>("resolution_y");
         inputs.resolution_z = root.get<int>("resolution_z");
-        inputs.domain_len_x = root.get<double>("domain_len_x");
-        inputs.domain_len_y = root.get<double>("domain_len_y");
-        inputs.domain_len_z = root.get<double>("domain_len_z");
+        inputs.xmin = root.get<double>("xmin");
+        inputs.xmax = root.get<double>("xmax");
+        inputs.ymin = root.get<double>("ymin");
+        inputs.ymax = root.get<double>("ymax");
+        inputs.zmin = root.get<double>("zmin");
+        inputs.zmax = root.get<double>("zmax");
         inputs.pml_strength = root.get<double>("pml_strength");
         inputs.pml_thickness = root.get<double>("pml_thickness");
         inputs.scheme_parameter = root.get<double>("scheme_parameter");
@@ -39,6 +42,9 @@ Parameters Readers::readJSON(const std::string &inputFileName) {
         int numy = static_cast<int>(inputs.domain_len_y * inputs.resolution_y);
         int numz = static_cast<int>(inputs.domain_len_z * inputs.resolution_z);
 
+        inputs.domain_len_x = inputs.xmax - inputs.xmin;
+        inputs.domain_len_y = inputs.ymax - inputs.ymin;
+        inputs.domain_len_z = inputs.zmax - inputs.zmin;
 
         inputs.numx = numx;
         inputs.numy = numy;

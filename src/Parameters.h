@@ -6,6 +6,7 @@
 #define PARAMETERS_H
 
 #include "Geometry.h"
+#include "Port.h"
 
 struct Parameters {
     double background_index; //background refractive index
@@ -21,6 +22,12 @@ struct Parameters {
     double domain_len_x; //length of the domain in x direction
     double domain_len_y; //length of the domain in y direction
     double domain_len_z; //length of the domain in z direction
+    double xmin; // x position of the domain, lower bound
+    double xmax; // x position of the domain, upper bound
+    double ymin; // y position of the domain, lower bound
+    double ymax; // y position of the domain, upper bound
+    double zmin; // z position of the domain, lower bound
+    double zmax; // z position of the domain, upper bound
     double dx; //grid spacing, assuming a uniform mesh
     double dy;
     double dz;
@@ -39,6 +46,8 @@ struct Parameters {
 
 
     std::vector<Shape> shapes;
+    std::vector<Port> input_ports;
+    std::vector<Port> output_ports;
 
     //todo: add method to print all of the loaded values inside of the code, so a user can confirm they are loaded correctly.
 };
