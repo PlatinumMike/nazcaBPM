@@ -4,6 +4,7 @@
 
 #include "Solver.h"
 #include "OperatorSuite.h"
+#include "GridInterpolator.h"
 
 #include <cmath>
 #include <complex>
@@ -17,13 +18,18 @@ using boost::extents;
 Solver::Solver(const Geometry &geometry, const PML &pmly, const PML &pmlz,
                const RectangularGrid &grid,
                const double scheme_parameter, const double k0,
-               const double reference_index, const bool mode_solve): scheme_parameter(scheme_parameter),
-                                                                     k0(k0), reference_index(reference_index),
+               const double reference_index, const bool mode_solve): k0(k0),
+                                                                     reference_index(reference_index),
+                                                                     scheme_parameter(scheme_parameter),
                                                                      mode_solve(mode_solve) {
     geometryPtr = &geometry;
     pmlyPtr = &pmly;
     pmlzPtr = &pmlz;
     gridPtr = &grid;
+
+    const int num1 = static_cast<int>(grid.get_numy());
+    const int num2 = static_cast<int>(grid.get_numz());
+    internal_field.resize(extents[num1][num2]);
 }
 
 // todo: error prone to skip over boundary points. off by one in the array indexing can easily occur.
@@ -155,4 +161,21 @@ multi_array<double, 2> Solver::get_intensity(const multi_array<std::complex<doub
         }
     }
     return intensity;
+}
+
+multi_array<std::complex<double>, 2> Solver::interpolate_field(const std::vector<double> &ygrid_new,
+                                                               const std::vector<double> &zgrid_new) const {
+    const GridInterpolator grid_interpolator(gridPtr->get_ygrid(), gridPtr->get_zgrid(), internal_field,
+                                             std::complex{0.0, 0.0});
+    const int num1 = static_cast<int>(ygrid_new.size());
+    const int num2 = static_cast<int>(zgrid_new.size());
+    multi_array<std::complex<double>, 2> new_field(extents[num1][num2]);
+
+    for (auto i = 0; i < ygrid_new.size(); i++) {
+        for (auto j = 0; j < zgrid_new.size(); j++) {
+            new_field[i][j] = grid_interpolator.get_value(ygrid_new[i], zgrid_new[j]);
+        }
+    }
+
+    return new_field;
 }

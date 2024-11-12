@@ -14,7 +14,7 @@ BpmSolver::BpmSolver(const Geometry &geometry, const PML &pmlx, const PML &pmly,
     geometry, pmlx, pmly, grid, scheme_parameter, k0, reference_index, false) {
 }
 
-void BpmSolver::run(const multi_array<std::complex<double>, 2> &initial_field) const {
+void BpmSolver::run(const multi_array<std::complex<double>, 2> &initial_field) {
     auto xgrid = gridPtr->get_xgrid();
     auto ygrid = gridPtr->get_ygrid();
     auto zgrid = gridPtr->get_zgrid();
@@ -26,25 +26,25 @@ void BpmSolver::run(const multi_array<std::complex<double>, 2> &initial_field) c
     int numy = static_cast<int>(gridPtr->get_numy());
     int numz = static_cast<int>(gridPtr->get_numz());
 
-    multi_array<std::complex<double>, 2> field = initial_field;
+    internal_field = initial_field;
 
     FieldMonitor start_field(gridPtr->get_ymin(), gridPtr->get_ymax(), gridPtr->get_zmin(), gridPtr->get_zmax(), 'x',
                              0.0,
                              numy, numz);
-    start_field.populate(ygrid, zgrid, field, 0);
+    start_field.populate(ygrid, zgrid, internal_field, 0);
     start_field.save_data("field_yz_start.h5");
 
     //slice at z=0
     FieldMonitor field_slice_xy(gridPtr->get_xmin(), gridPtr->get_xmax(), gridPtr->get_ymin(), gridPtr->get_ymax(), 'z',
                                 0.0,
                                 numx, numy);
-    field_slice_xy.populate(ygrid, zgrid, field, 0);
+    field_slice_xy.populate(ygrid, zgrid, internal_field, 0);
 
     //slice at y=0
     FieldMonitor field_slice_xz(gridPtr->get_xmin(), gridPtr->get_xmax(), gridPtr->get_zmin(), gridPtr->get_zmax(), 'y',
                                 0.0,
                                 numx, numz);
-    field_slice_xz.populate(ygrid, zgrid, field, 0);
+    field_slice_xz.populate(ygrid, zgrid, internal_field, 0);
 
     const int index_1percent = numx / 100;
     const int index_10percent = numx / 10;
@@ -53,9 +53,9 @@ void BpmSolver::run(const multi_array<std::complex<double>, 2> &initial_field) c
     const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     for (int x_step = 1; x_step < numx; x_step++) {
         const double current_x = xgrid[x_step - 1];
-        field = do_step_cn(field, current_x, gridPtr->get_dx());
-        field_slice_xy.populate(ygrid, zgrid, field, x_step);
-        field_slice_xz.populate(ygrid, zgrid, field, x_step);
+        internal_field = do_step_cn(internal_field, current_x, gridPtr->get_dx());
+        field_slice_xy.populate(ygrid, zgrid, internal_field, x_step);
+        field_slice_xz.populate(ygrid, zgrid, internal_field, x_step);
         //printing rough indication of simulation progress
         if (x_step == index_1percent) {
             std::cout << "1% reached" << std::endl;
@@ -86,7 +86,7 @@ void BpmSolver::run(const multi_array<std::complex<double>, 2> &initial_field) c
 
     FieldMonitor end_field(gridPtr->get_ymin(), gridPtr->get_ymax(), gridPtr->get_zmin(), gridPtr->get_zmax(), 'x', 0.0,
                            numy, numz);
-    end_field.populate(ygrid, zgrid, field, 0);
+    end_field.populate(ygrid, zgrid, internal_field, 0);
     end_field.save_data("field_yz_end.h5");
 
     field_slice_xy.save_data("field_xy.h5");

@@ -37,14 +37,14 @@ Parameters Readers::readJSON(const std::string &inputFileName) {
         inputs.dry_run = root.get<bool>("dry_run");
 
 
+        inputs.domain_len_x = inputs.xmax - inputs.xmin;
+        inputs.domain_len_y = inputs.ymax - inputs.ymin;
+        inputs.domain_len_z = inputs.zmax - inputs.zmin;
+
         //compute derived quantities
         int numx = static_cast<int>(inputs.domain_len_x * inputs.resolution_x);
         int numy = static_cast<int>(inputs.domain_len_y * inputs.resolution_y);
         int numz = static_cast<int>(inputs.domain_len_z * inputs.resolution_z);
-
-        inputs.domain_len_x = inputs.xmax - inputs.xmin;
-        inputs.domain_len_y = inputs.ymax - inputs.ymin;
-        inputs.domain_len_z = inputs.zmax - inputs.zmin;
 
         inputs.numx = numx;
         inputs.numy = numy;

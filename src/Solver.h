@@ -27,6 +27,15 @@ public:
 
     multi_array<double, 2> get_intensity(const multi_array<std::complex<double>, 2> &field) const;
 
+    /**
+     * Interpolate the internal field on a given new grid.
+     * @param ygrid_new new y coordinates
+     * @param zgrid_new new z coordinates
+     * @return field on the new coordinates.
+     */
+    multi_array<std::complex<double>, 2> interpolate_field(const std::vector<double> &ygrid_new,
+                                                           const std::vector<double> &zgrid_new) const;
+
 protected:
     /**
      * Do one step in propagation direction with the Crank-Nicolson scheme
@@ -40,16 +49,17 @@ protected:
                                                                   double dx) const;
 
     const RectangularGrid *gridPtr;
+    multi_array<std::complex<double>, 2> internal_field;
+    const double k0;
+    const double reference_index;
 
 private:
-    double scheme_parameter = 0.5;
-    double k0;
-    double reference_index;
+    const double scheme_parameter = 0.5;
     // pointers to simulation objects
     const Geometry *geometryPtr;
     const PML *pmlyPtr;
     const PML *pmlzPtr;
-    bool mode_solve;
+    const bool mode_solve;
 };
 
 

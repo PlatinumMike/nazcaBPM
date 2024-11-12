@@ -20,9 +20,17 @@ public:
 
     [[nodiscard]] double get_yspan() const;
 
+    [[nodiscard]] double get_ymin() const;
+
+    [[nodiscard]] double get_ymax() const;
+
     [[nodiscard]] double get_z0() const;
 
     [[nodiscard]] double get_zspan() const;
+
+    [[nodiscard]] double get_zmin() const;
+
+    [[nodiscard]] double get_zmax() const;
 
 private:
     const std::string name;

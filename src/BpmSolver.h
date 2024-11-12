@@ -18,7 +18,7 @@ public:
      * It stops when the x position has reached the end, i.e. x=xmax.
      * @param initial_field Starting field at x=xmin.
      */
-    void run(const multi_array<std::complex<double>, 2> &initial_field) const;
+    void run(const multi_array<std::complex<double>, 2> &initial_field);
 };
 
 

@@ -26,6 +26,22 @@ double Port::get_yspan() const {
     return yspan;
 }
 
+double Port::get_ymin() const {
+    return y0 - 0.5 * yspan;
+}
+
+double Port::get_ymax() const {
+    return y0 + 0.5 * yspan;
+}
+
+double Port::get_zmin() const {
+    return z0 - 0.5 * zspan;
+}
+
+double Port::get_zmax() const {
+    return z0 + 0.5 * zspan;
+}
+
 double Port::get_z0() const {
     return z0;
 }

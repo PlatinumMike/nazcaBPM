@@ -79,17 +79,38 @@ void Engine::run() const {
         return;
     }
 
+    /*
+     * Create a 'mini' Solver for each port, that is used to find the modes.
+     */
     //todo: loop over all in/out ports, get modes, then get input profile and pass that into the BpmSolver.
     Port inport0("a0", "left", 0.0, 0.0, 0.0, 4.0, 4.0);
 
+    int numy_a0 = static_cast<int>(inport0.get_yspan() * inputs.resolution_y);
+    int numz_a0 = static_cast<int>(inport0.get_zspan() * inputs.resolution_z);
+
+    auto ygrid_a0 = AuxiliaryFunctions::linspace(inport0.get_ymin(), inport0.get_ymax(), numy_a0);
+    auto zgrid_a0 = AuxiliaryFunctions::linspace(inport0.get_zmin(), inport0.get_zmax(), numz_a0);
+
+    const RectangularGrid grid_a0(xgrid, ygrid_a0, zgrid_a0);
+
+    //todo: some issue with the PMl inside of the mode solver, use metal walls for now, but check later on.
+    const PML pmly_a0(inputs.pml_thickness, 0 * inputs.pml_strength, inport0.get_ymin(), inport0.get_ymax());
+    const PML pmlz_a0(inputs.pml_thickness, 0 * inputs.pml_strength, inport0.get_zmin(), inport0.get_zmax());
+
+
     //todo: the mode solver should use a smaller grid that it gets from the port, not same big BPM grid.
-    ModeSolver mode_solver(geometry, pmly, pmlz, gaussianSource, grid, inputs.scheme_parameter, inputs.k0,
+    ModeSolver mode_solver(geometry, pmly_a0, pmlz_a0, gaussianSource, grid_a0, inputs.scheme_parameter, inputs.k0,
                            inputs.reference_index, inport0);
     mode_solver.run();
     auto intial_field = mode_solver.interpolate_field(grid.get_ygrid(), grid.get_zgrid());
 
+    /*
+     * Now create the main simulation Solver, and run it.
+     */
     BpmSolver bpm_solver(geometry, pmly, pmlz, grid, inputs.scheme_parameter, inputs.k0,
                          inputs.reference_index);
     bpm_solver.run(intial_field);
     //todo: call function solver.save_data() or something to save/extract data after the solve is completed.
+
+    //todo: use bpm_solver.interpolate_field() to get the field at the output pins, and do mode overlap.
 }

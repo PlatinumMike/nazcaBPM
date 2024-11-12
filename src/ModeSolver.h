@@ -22,30 +22,44 @@ public:
      */
     void run(int max_iterations = 1000);
 
-    //todo: this takes in a grid and field, and interpolates on the internal grid then does the mode overlap with the internal field.
-    std::complex<double> get_mode_overlap(const multi_array<std::complex<double>, 2> &bpm_field) const;
+    /**
+     * Get the mode overlap
+     * @param bpm_field Field of the BPM simulation, already assumed to be interpolated on the grid of the ModeSolver.
+     * @return coupling coefficient (mode overlap integral)
+     */
+    [[nodiscard]] double get_mode_overlap(const multi_array<std::complex<double>, 2> &bpm_field) const;
 
     /**
      * Get propagation constant of the mode that is found.
      * @return propagation constant (1/um).
      */
-    double get_beta() const;
+    [[nodiscard]] double get_beta() const;
 
     /**
-     * Interpolate the internal field on a given new grid.
-     * @param ygrid new y coordinates
-     * @param zgrid new z coordinates
-     * @return field on the new coordinates.
-     */
-    multi_array<std::complex<double>, 2> interpolate_field(const std::vector<double> &ygrid,
-                                                           const std::vector<double> &zgrid) const;
+      * Get effective index of the mode that is found.
+      * @return effective index.
+      */
+    [[nodiscard]] double get_neff() const;
 
 private:
     Port port;
     const ModeHandler *sourcePtr;
     double beta;
+    double neff;
+    const double abs_tolerance = 1.0e-3;
+    const int min_iterations = 10;
 
-    multi_array<std::complex<double>, 2> internal_field;
+    /**
+     * Rescales the field such that the integral of |u|^2 over the yz plane is 1.
+     */
+    void normalize_field(multi_array<std::complex<double>, 2> &field) const;
+
+    double compute_beta(const multi_array<std::complex<double>, 2> &old_field,
+                        const multi_array<std::complex<double>, 2> &new_field) const;
+
+    double get_field_log(const multi_array<std::complex<double>, 2> &field) const;
+
+    double get_norm(const multi_array<std::complex<double>, 2> &field) const;
 };
 
 

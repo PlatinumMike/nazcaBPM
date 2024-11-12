@@ -24,6 +24,9 @@ multi_array<std::complex<double>, 2> ModeHandler::get_initial_profile(const std:
     const int numz = static_cast<int>(zgrid.size());
     multi_array<std::complex<double>, 2> initial_profile(extents[numy][numz]);
     std::complex<double> value = {0.0, 0.0};
+    // normalize such that the integral of |u|^2 is 1.
+    const double amplitude = std::sqrt(1.0 / (std::numbers::pi * std_y * std_z));
+
     double y = 0.0;
     double z = 0.0;
     for (int idy = 0; idy < numy; idy++) {
@@ -36,7 +39,7 @@ multi_array<std::complex<double>, 2> ModeHandler::get_initial_profile(const std:
                 z = zgrid[idz];
                 double deltay = (y - y0) / std_y;
                 double deltaz = (z - z0) / std_z;
-                value = {std::exp(-0.5 * deltay * deltay - 0.5 * deltaz * deltaz), 0.0};
+                value = {amplitude * std::exp(-0.5 * deltay * deltay - 0.5 * deltaz * deltaz), 0.0};
             }
             initial_profile[idy][idz] = value;
         }

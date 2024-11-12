@@ -1,7 +1,7 @@
 Todo items:
 - Save also slices of the field at the beginning, middle, and end. For various directions. Add interpolation of the field so you can neatly save it at a given slice. And improve plotting.
 - Load mode field as initial profile, handle correct placement of the mode, and do the mode overlap at the output as well.
-- Compute mode fields inside the BPM itself.
+- Compute higher order modes inside the BPM.
 - Add more unit tests.
 - Add Python interface, swig, pybind11? Or dockerize?
 - Add exception handling.
@@ -12,3 +12,5 @@ Todo items:
 - Make it optional to export the refractive index and field in slices. This is useful initially when setting up a simulation to verify that it models what you think it does. But it does not make sense to export this for all 10^5 simulations in the sweep. So for the other 99999 simulations just export the mode overlaps at the output. If you are worried about flying blind and modeling the wrong thing, just rerun the final optimized scenario with output of the fields to check.
 - Profile the code to see where it can be sped up.
 - Translate to Rust? Replace boost by `ndarray` crate. For json use `serde`. We can use `hdf5`, or use `ndarray` to .npy files (numpy). If you make a proper python interface we can even avoid writing to disk entirely, the results just stay in memory. If you eliminate hdf5, you also do not need any external libs, so it will be easier to wrap it as a python package.
+- Add some simple script sim.plot() that shows the geometry and PML so that a user knows the setup is correct. Similar to what MEEP does.
+
