@@ -32,9 +32,6 @@ Engine::Engine(const std::string &inputFileName) {
 void Engine::run() const {
     const Parameters inputs = _inputs; //make a const copy, to avoid accidental modification of input variables.
 
-    //TODO: loop over ports in input file, then for each do a mini simulation to get the modes.
-    // then use one of those ports as the mode source for the real simulation.
-
     auto xgrid = AuxiliaryFunctions::linspace(inputs.xmin, inputs.xmax, inputs.numx);
     auto ygrid = AuxiliaryFunctions::linspace(inputs.ymin, inputs.ymax, inputs.numy);
     auto zgrid = AuxiliaryFunctions::linspace(inputs.zmin, inputs.zmax, inputs.numz);
@@ -80,7 +77,9 @@ void Engine::run() const {
      * Create a 'mini' Solver for each port, that is used to find the modes.
      */
     //todo: loop over all in/out ports, get modes, then get input profile and pass that into the BpmSolver.
-    Port inport0("a0", "left", 0.0, 0.0, 0.0, 4.0, 4.0);
+    // lot of code duplication here. Maybe grid info of a port should be in the Port class?
+    // Also update the input file such that it contains a list of ports that we read in.
+    Port inport0("a0", "left", 0.0, 0.0, 0.0, 6.0, 2.0);
 
     int numy_a0 = static_cast<int>(inport0.get_yspan() * inputs.resolution_y);
     int numz_a0 = static_cast<int>(inport0.get_zspan() * inputs.resolution_z);
@@ -95,11 +94,31 @@ void Engine::run() const {
     const PML pmlz_a0(inputs.pml_thickness, 0 * inputs.pml_strength, inport0.get_zmin(), inport0.get_zmax());
 
 
-    //todo: the mode solver should use a smaller grid that it gets from the port, not same big BPM grid.
     ModeSolver mode_solver(geometry, pmly_a0, pmlz_a0, grid_a0, inputs.scheme_parameter, inputs.k0,
                            inputs.reference_index, inport0);
     mode_solver.run();
     auto intial_field = mode_solver.interpolate_field(grid.get_ygrid(), grid.get_zgrid());
+
+
+    //todo: mode solving is not always stable. It does not always converge. Also, a wider WG should have a larger neff, but that is not what the BPM finds...
+    // output ports
+    Port outport0("b0", "right", xgrid.back(), 0.0, 0.0, 6.0, 2.0);
+
+    int numy_b0 = static_cast<int>(outport0.get_yspan() * inputs.resolution_y);
+    int numz_b0 = static_cast<int>(outport0.get_zspan() * inputs.resolution_z);
+
+    auto ygrid_b0 = AuxiliaryFunctions::linspace(outport0.get_ymin(), outport0.get_ymax(), numy_b0);
+    auto zgrid_b0 = AuxiliaryFunctions::linspace(outport0.get_zmin(), outport0.get_zmax(), numz_b0);
+
+    const RectangularGrid grid_b0(xgrid, ygrid_b0, zgrid_b0);
+
+    const PML pmly_b0(inputs.pml_thickness, 0 * inputs.pml_strength, outport0.get_ymin(), outport0.get_ymax());
+    const PML pmlz_b0(inputs.pml_thickness, 0 * inputs.pml_strength, outport0.get_zmin(), outport0.get_zmax());
+
+
+    ModeSolver mode_solver_out(geometry, pmly_b0, pmlz_b0, grid_b0, inputs.scheme_parameter, inputs.k0,
+                               inputs.reference_index, outport0);
+    mode_solver_out.run();
 
     /*
      * Now create the main simulation Solver, and run it.
@@ -109,5 +128,8 @@ void Engine::run() const {
     bpm_solver.run(intial_field);
     //todo: call function solver.save_data() or something to save/extract data after the solve is completed.
 
-    //todo: use bpm_solver.interpolate_field() to get the field at the output pins, and do mode overlap.
+    auto final_field = bpm_solver.interpolate_field(ygrid_b0, zgrid_b0);
+
+    double coef_b0 = mode_solver_out.get_mode_overlap(final_field);
+    std::cout << std::format("Coupling coefficient is {}", coef_b0) << std::endl;
 }
