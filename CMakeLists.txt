@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.20)
 project(nazcaBPM)
 
 set(CMAKE_CXX_STANDARD 20)
 
-find_package(Boost 1.80 REQUIRED)
+find_package(Boost 1.70 REQUIRED)
 find_package(HDF5 1.10 REQUIRED COMPONENTS CXX)
 
 set(EXENAME "${PROJECT_NAME}.x")
