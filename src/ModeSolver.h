@@ -6,12 +6,11 @@
 #define MODESOLVER_H
 #include "Port.h"
 #include "Solver.h"
-#include "ModeHandler.h"
 
 
 class ModeSolver : public Solver {
 public:
-    ModeSolver(const Geometry &geometry, const PML &pmlx, const PML &pmly, const ModeHandler &source,
+    ModeSolver(const Geometry &geometry, const PML &pmlx, const PML &pmly,
                const RectangularGrid &grid,
                double scheme_parameter, double k0, double reference_index, const Port &port);
 
@@ -43,7 +42,6 @@ public:
 
 private:
     Port port;
-    const ModeHandler *sourcePtr;
     double beta;
     double neff;
     const double abs_tolerance = 1.0e-3;
@@ -60,6 +58,21 @@ private:
     double get_field_log(const multi_array<std::complex<double>, 2> &field) const;
 
     double get_norm(const multi_array<std::complex<double>, 2> &field) const;
+
+    /**
+        * Generates a 2D Gaussian profile
+        * @param ygrid grid of y positions
+        * @param zgrid grid of z positions
+        * @param y0 center of Gaussian in y
+        * @param z0 center of Gaussian in z
+        * @param std_y standard deviation in y
+        * @param std_z standard deviation in z
+        * @return
+        */
+    multi_array<std::complex<double>, 2> get_initial_profile(const std::vector<double> &ygrid,
+                                                             const std::vector<double> &zgrid, double y0,
+                                                             double z0, double std_y,
+                                                             double std_z) const;
 };
 
 

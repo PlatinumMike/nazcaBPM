@@ -7,13 +7,15 @@
 #include <iostream>
 #include <format>
 
-ModeSolver::ModeSolver(const Geometry &geometry, const PML &pmlx, const PML &pmly, const ModeHandler &source,
+using boost::extents;
+
+ModeSolver::ModeSolver(const Geometry &geometry, const PML &pmlx, const PML &pmly,
                        const RectangularGrid &grid, const double scheme_parameter, const double k0,
                        const double reference_index, const Port &port): Solver(
                                                                             geometry, pmlx, pmly, grid,
                                                                             scheme_parameter, k0, reference_index,
                                                                             true),
-                                                                        port(port), sourcePtr(&source) {
+                                                                        port(port) {
     beta = 0.0;
     neff = 0.0;
 }
@@ -28,8 +30,7 @@ void ModeSolver::run(const int max_iterations) {
     constexpr double eps_y = 0.5;
     constexpr double eps_z = 0.3;
     //define field in current slice to be "field". Since it is a scalar BPM there is no polarization.
-    internal_field = sourcePtr->get_initial_profile(
-        ygrid, zgrid, port.get_y0() + eps_y, port.get_z0() + eps_z, 1.0, 1.0);
+    internal_field = get_initial_profile(ygrid, zgrid, port.get_y0() + eps_y, port.get_z0() + eps_z, 1.0, 1.0);
 
     double beta_old = beta;
     bool mode_found = false;
@@ -89,6 +90,37 @@ double ModeSolver::get_norm(const multi_array<std::complex<double>, 2> &field) c
     }
     norm *= gridPtr->get_dy() * gridPtr->get_dz();
     return norm;
+}
+
+multi_array<std::complex<double>, 2> ModeSolver::get_initial_profile(const std::vector<double> &ygrid,
+                                                                     const std::vector<double> &zgrid, const double y0,
+                                                                     const double z0, const double std_y,
+                                                                     const double std_z) const {
+    const int numy = static_cast<int>(ygrid.size());
+    const int numz = static_cast<int>(zgrid.size());
+    multi_array<std::complex<double>, 2> initial_profile(extents[numy][numz]);
+    std::complex<double> value = {0.0, 0.0};
+    // normalize such that the integral of |u|^2 is 1.
+    const double amplitude = std::sqrt(1.0 / (std::numbers::pi * std_y * std_z));
+
+    double y = 0.0;
+    double z = 0.0;
+    for (int idy = 0; idy < numy; idy++) {
+        for (int idz = 0; idz < numz; idz++) {
+            if (idy == 0 || idy == numy - 1 || idz == 0 || idz == numz - 1) {
+                //set boundary values to zero. Simple Dirichlet BCs. Reflections are negligible since a PML will be placed in front of the metal wall anyway.
+                value = {0.0, 0.0};
+            } else {
+                y = ygrid[idy];
+                z = zgrid[idz];
+                double deltay = (y - y0) / std_y;
+                double deltaz = (z - z0) / std_z;
+                value = {amplitude * std::exp(-0.5 * deltay * deltay - 0.5 * deltaz * deltaz), 0.0};
+            }
+            initial_profile[idy][idz] = value;
+        }
+    }
+    return initial_profile;
 }
 
 void ModeSolver::normalize_field(multi_array<std::complex<double>, 2> &field) const {

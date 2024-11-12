@@ -26,8 +26,6 @@ add_executable(${EXENAME} src/main.cpp
         src/Solver.h
         src/PML.cpp
         src/PML.h
-        src/ModeHandler.cpp
-        src/ModeHandler.h
         src/OperatorSuite.cpp
         src/OperatorSuite.h
         src/RectangularGrid.cpp

@@ -5,7 +5,6 @@
 #include "Engine.h"
 #include "IO/Readers.h"
 #include "PML.h"
-#include "ModeHandler.h"
 #include "AuxiliaryFunctions.h"
 #include "IndexMonitor.h"
 #include "BpmSolver.h"
@@ -48,8 +47,6 @@ void Engine::run() const {
     const PML pmly(inputs.pml_thickness, inputs.pml_strength, grid.get_ymin(), grid.get_ymax());
     //adds a PML on both sides
     const PML pmlz(inputs.pml_thickness, inputs.pml_strength, grid.get_zmin(), grid.get_zmax());
-    // setup mode source
-    const ModeHandler gaussianSource("Gaussian");
 
     // Define index monitors.
     IndexMonitor monitor_x0(grid.get_ymin(), grid.get_ymax(), grid.get_zmin(), grid.get_zmax(), 'x',
@@ -99,7 +96,7 @@ void Engine::run() const {
 
 
     //todo: the mode solver should use a smaller grid that it gets from the port, not same big BPM grid.
-    ModeSolver mode_solver(geometry, pmly_a0, pmlz_a0, gaussianSource, grid_a0, inputs.scheme_parameter, inputs.k0,
+    ModeSolver mode_solver(geometry, pmly_a0, pmlz_a0, grid_a0, inputs.scheme_parameter, inputs.k0,
                            inputs.reference_index, inport0);
     mode_solver.run();
     auto intial_field = mode_solver.interpolate_field(grid.get_ygrid(), grid.get_zgrid());
