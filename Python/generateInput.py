@@ -16,6 +16,11 @@ height = 0.350
 taper_length = 10
 zmin = -height / 2
 zmax = height / 2
+
+resx = 10
+resy = 30
+resz = resy
+
 # this polygon could be exported by nazca for instance.
 # Adding extra bit of straight waveguide, otherwise the polygon ends right on the domain border, which means there is a jump in index at the start.
 taper = {
@@ -49,8 +54,28 @@ strt = {
 }
 shapes = [taper, strt]
 
-port_a0 = {"name": "a0", "placement": "left", "yspan": width1 + 2, "zspan": height + 2, "y0": 0.0, "z0": 0.0}
-port_b0 = {"name": "b0", "placement": "right", "yspan": width2 + 2, "zspan": height + 2, "y0": 0.0, "z0": 0.0}
+# ports have their own grid, and thus their own resolution.
+# no point in using a higher resolution than that of the main simulation because the field is interpolated on the BPM simulation grid anyway.
+port_a0 = {
+    "name": "a0",
+    "placement": "left",
+    "yspan": width1 + 2,
+    "zspan": height + 2,
+    "y0": 0.0,
+    "z0": 0.0,
+    "port_resolution_y": resy,
+    "port_resolution_z": resz,
+}
+port_b0 = {
+    "name": "b0",
+    "placement": "right",
+    "yspan": width2 + 2,
+    "zspan": height + 2,
+    "y0": 0.0,
+    "z0": 0.0,
+    "port_resolution_y": resy,
+    "port_resolution_z": resz,
+}
 
 inports = [port_a0]
 outports = [port_b0]
@@ -61,9 +86,9 @@ dataDict = {
     "background_index": 1.5,
     "reference_index": 1.65,
     "wl": 1.5,
-    "resolution_x": 10,
-    "resolution_y": 30,
-    "resolution_z": 30,
+    "resolution_x": resx,
+    "resolution_y": resy,
+    "resolution_z": resz,
     "xmin": 0.0,
     "xmax": taper_length + 30.0,
     "ymin": -3.0,

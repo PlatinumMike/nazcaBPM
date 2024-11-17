@@ -33,6 +33,14 @@ public:
 
     size_t get_numz() const;
 
+    [[nodiscard]] double get_y0() const;
+
+    [[nodiscard]] double get_yspan() const;
+
+    [[nodiscard]] double get_z0() const;
+
+    [[nodiscard]] double get_zspan() const;
+
     const std::vector<double> &get_ygrid() const;
 
     const std::vector<double> &get_zgrid() const;

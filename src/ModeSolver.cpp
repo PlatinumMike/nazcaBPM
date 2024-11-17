@@ -10,11 +10,11 @@
 using boost::extents;
 
 ModeSolver::ModeSolver(const Geometry &geometry, const PML &pmly, const PML &pmlz,
-                       const RectangularGrid &grid, const double scheme_parameter, const double k0,
-                       const double reference_index, const Port &port): Solver(
-                                                                            geometry, pmly, pmlz, grid,
-                                                                            scheme_parameter, k0, reference_index),
-                                                                        port(port) {
+                       const Port &port, const double scheme_parameter, const double k0,
+                       const double reference_index): Solver(
+                                                          geometry, pmly, pmlz, port,
+                                                          scheme_parameter, k0, reference_index),
+                                                      port(port) {
     beta = 0.0;
     neff = 0.0;
 }

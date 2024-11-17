@@ -5,40 +5,21 @@
 #ifndef PORT_H
 #define PORT_H
 #include <string>
+#include "RectangularGrid.h"
 
 
-class Port {
+class Port : public RectangularGrid {
 public:
-    Port(const std::string &name, const std::string &placement, double x0, double y0, double z0, double yspan,
-         double zspan);
+    Port(const std::string &name, const std::string &placement,
+         double x0, std::vector<double> const &ygrid, std::vector<double> const &zgrid);
 
     [[nodiscard]] std::string get_name() const;
 
     [[nodiscard]] double get_x0() const;
 
-    [[nodiscard]] double get_y0() const;
-
-    [[nodiscard]] double get_yspan() const;
-
-    [[nodiscard]] double get_ymin() const;
-
-    [[nodiscard]] double get_ymax() const;
-
-    [[nodiscard]] double get_z0() const;
-
-    [[nodiscard]] double get_zspan() const;
-
-    [[nodiscard]] double get_zmin() const;
-
-    [[nodiscard]] double get_zmax() const;
-
 private:
     const std::string name;
     const double x0;
-    const double y0;
-    const double z0;
-    const double yspan;
-    const double zspan;
     //todo: placement not used currently, remove?
     const std::string placement; //left (x=xmin) or right (x=xmax)
 

@@ -11,8 +11,8 @@
 class ModeSolver : public Solver {
 public:
     ModeSolver(const Geometry &geometry, const PML &pmly, const PML &pmlz,
-               const RectangularGrid &grid,
-               double scheme_parameter, double k0, double reference_index, const Port &port);
+               const Port &port,
+               double scheme_parameter, double k0, double reference_index);
 
     /**
      * This will run the Solver to search for modes.
@@ -21,7 +21,7 @@ public:
      * @param increment_x step size in x direction.
      * This is typically the same as for the main BPM simulation, but you can specify a different step size.
      */
-    void run(double increment_x,int max_iterations = 1000);
+    void run(double increment_x, int max_iterations = 1000);
 
     /**
      * Get the mode overlap

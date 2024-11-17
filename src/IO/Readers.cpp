@@ -5,6 +5,7 @@
 #include "Readers.h"
 #include "../Geometry.h"
 #include "../Port.h"
+#include "../AuxiliaryFunctions.h"
 #include <iostream>
 #include <filesystem>
 #include <format>
@@ -105,6 +106,8 @@ std::vector<Port> Readers::get_ports(boost::property_tree::ptree root, const std
         const auto yspan = actual_port.get<double>("yspan");
         const auto z0 = actual_port.get<double>("z0");
         const auto zspan = actual_port.get<double>("zspan");
+        const auto resolution_y = actual_port.get<double>("port_resolution_y");
+        const auto resolution_z = actual_port.get<double>("port_resolution_z");
         const auto name = actual_port.get<std::string>("name");
         const auto placement = actual_port.get<std::string>("placement");
         double x0 = 0.0;
@@ -117,7 +120,15 @@ std::vector<Port> Readers::get_ports(boost::property_tree::ptree root, const std
                     << std::endl;
             exit(EXIT_FAILURE);
         }
-        Port new_port(name, placement, x0, y0, z0, yspan, zspan);
+        double ymin = 0.5 * (y0 - yspan);
+        double ymax = 0.5 * (y0 + yspan);
+        double zmin = 0.5 * (z0 - zspan);
+        double zmax = 0.5 * (z0 + zspan);
+        int numy_port = static_cast<int>(yspan * resolution_y);
+        int numz_port = static_cast<int>(zspan * resolution_z);
+        auto ygrid = AuxiliaryFunctions::linspace(ymin, ymax, numy_port);
+        auto zgrid = AuxiliaryFunctions::linspace(zmin, zmax, numz_port);
+        Port new_port(name, placement, x0, ygrid, zgrid);
         portVec.push_back(new_port);
     }
 

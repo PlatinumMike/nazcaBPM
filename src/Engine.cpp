@@ -76,22 +76,13 @@ void Engine::run() const {
     /*
      * Create a 'mini' Solver for each port, that is used to find the modes.
      */
-    //todo: lot of code duplication here. Maybe grid info of a port should be in the Port class?
     //todo: mode solving is not always stable. It does not always converge. Also, a wider WG should have a larger neff, but that is not what the BPM finds...
     // even if I use a straight waveguide it somehow does not find the same mode at the start and end... investigate further.
-    // output ports
     std::vector<ModeSolver> input_solvers;
     std::vector<ModeSolver> output_solvers;
     double increment_x = grid.get_dx();
+    // input ports
     for (const auto &input_port: inputs.input_ports) {
-        int numy_input = static_cast<int>(input_port.get_yspan() * inputs.resolution_y);
-        int numz_input = static_cast<int>(input_port.get_zspan() * inputs.resolution_z);
-
-        auto ygrid_input = AuxiliaryFunctions::linspace(input_port.get_ymin(), input_port.get_ymax(), numy_input);
-        auto zgrid_input = AuxiliaryFunctions::linspace(input_port.get_zmin(), input_port.get_zmax(), numz_input);
-
-        const RectangularGrid grid_input(ygrid_input, zgrid_input);
-
         //todo: some issue with the PMl inside of the mode solver, use metal walls for now, but check later on.
         const PML pmly_input(inputs.pml_thickness, 0 * inputs.pml_strength, input_port.get_ymin(),
                              input_port.get_ymax());
@@ -99,30 +90,22 @@ void Engine::run() const {
                              input_port.get_zmax());
 
 
-        ModeSolver mode_solver(geometry, pmly_input, pmlz_input, grid_input, inputs.scheme_parameter, inputs.k0,
-                               inputs.reference_index, input_port);
+        ModeSolver mode_solver(geometry, pmly_input, pmlz_input, input_port, inputs.scheme_parameter, inputs.k0,
+                               inputs.reference_index);
         mode_solver.run(increment_x);
 
         input_solvers.push_back(mode_solver);
     }
-
+    // output ports
     for (const auto &output_port: inputs.output_ports) {
-        int numy_output = static_cast<int>(output_port.get_yspan() * inputs.resolution_y);
-        int numz_output = static_cast<int>(output_port.get_zspan() * inputs.resolution_z);
-
-        auto ygrid_output = AuxiliaryFunctions::linspace(output_port.get_ymin(), output_port.get_ymax(), numy_output);
-        auto zgrid_output = AuxiliaryFunctions::linspace(output_port.get_zmin(), output_port.get_zmax(), numz_output);
-
-        const RectangularGrid grid_output(ygrid_output, zgrid_output);
-
         const PML pmly_output(inputs.pml_thickness, 0 * inputs.pml_strength, output_port.get_ymin(),
                               output_port.get_ymax());
         const PML pmlz_output(inputs.pml_thickness, 0 * inputs.pml_strength, output_port.get_zmin(),
                               output_port.get_zmax());
 
 
-        ModeSolver mode_solver(geometry, pmly_output, pmlz_output, grid_output, inputs.scheme_parameter, inputs.k0,
-                               inputs.reference_index, output_port);
+        ModeSolver mode_solver(geometry, pmly_output, pmlz_output, output_port, inputs.scheme_parameter, inputs.k0,
+                               inputs.reference_index);
         mode_solver.run(increment_x);
 
         output_solvers.push_back(mode_solver);
@@ -141,11 +124,9 @@ void Engine::run() const {
     bpm_solver.run(intial_field);
     //todo: call function solver.save_data() or something to save/extract data after the solve is completed.
 
-    //todo: update the bit below.
-    // auto ygrid_output = AuxiliaryFunctions::linspace(output_port.get_ymin(), output_port.get_ymax(), numy_output);
-    // auto zgrid_output = AuxiliaryFunctions::linspace(output_port.get_zmin(), output_port.get_zmax(), numz_output);
-    // auto final_field = bpm_solver.interpolate_field(ygrid_output, zgrid_output);
-    //
-    // double coef_b0 = output_solvers.front().get_mode_overlap(final_field);
-    // std::cout << std::format("Coupling coefficient is {}", coef_b0) << std::endl;
+    auto output_port = inputs.output_ports.front();
+    auto final_field = bpm_solver.interpolate_field(output_port.get_ygrid(), output_port.get_zgrid());
+
+    double coef_b0 = output_solvers.front().get_mode_overlap(final_field);
+    std::cout << std::format("Coupling coefficient is {}", coef_b0) << std::endl;
 }

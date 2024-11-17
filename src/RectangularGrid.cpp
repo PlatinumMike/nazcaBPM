@@ -42,6 +42,22 @@ size_t RectangularGrid::get_numz() const {
     return m_zgrid.size();
 }
 
+double RectangularGrid::get_y0() const {
+    return 0.5 * (m_ygrid.front() + m_ygrid.back());
+}
+
+double RectangularGrid::get_yspan() const {
+    return m_ygrid.back() - m_ygrid.front();
+}
+
+double RectangularGrid::get_z0() const {
+    return 0.5 * (m_zgrid.front() + m_zgrid.back());
+}
+
+double RectangularGrid::get_zspan() const {
+    return m_zgrid.back() - m_zgrid.front();
+}
+
 const std::vector<double> &RectangularGrid::get_ygrid() const {
     return m_ygrid;
 }
