@@ -49,6 +49,12 @@ strt = {
 }
 shapes = [taper, strt]
 
+port_a0 = {"name": "a0", "placement": "left", "yspan": width1 + 2, "zspan": height + 2, "y0": 0.0, "z0": 0.0}
+port_b0 = {"name": "b0", "placement": "right", "yspan": width2 + 2, "zspan": height + 2, "y0": 0.0, "z0": 0.0}
+
+inports = [port_a0]
+outports = [port_b0]
+
 
 # convert to python dict
 dataDict = {
@@ -69,6 +75,8 @@ dataDict = {
     "shapes": shapes,
     "scheme_parameter": 0.5,
     "dry_run": False,
+    "input_ports": inports,
+    "output_ports": outports,
 }
 
 # convert to JSON
