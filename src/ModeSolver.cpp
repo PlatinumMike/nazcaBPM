@@ -19,7 +19,7 @@ ModeSolver::ModeSolver(const Geometry &geometry, const PML &pmly, const PML &pml
     neff = 0.0;
 }
 
-void ModeSolver::run(const int max_iterations) {
+void ModeSolver::run(const double increment_x, const int max_iterations) {
     auto ygrid = gridPtr->get_ygrid();
     auto zgrid = gridPtr->get_zgrid();
 
@@ -36,13 +36,13 @@ void ModeSolver::run(const int max_iterations) {
     double iterations_used = 0;
 
     //For the Imaginary distance method we propagate along ix instead of x.
-    const std::complex<double> propagation_factor = gridPtr->get_dx() / (2.0 * k0 * reference_index)
+    const std::complex<double> propagation_factor = increment_x / (2.0 * k0 * reference_index)
                                                     * std::complex<double>{-1.0, 0.0};
 
     for (int x_step = 0; x_step < max_iterations; x_step++) {
         // pass x=x0, and dx=0 because we do not need to advance in x. That is only used to get the index, and we want to mimic an infinitely long straight waveguide.
         auto new_field = do_step_cn(internal_field, port.get_x0(), 0.0, propagation_factor);
-        beta = compute_beta(internal_field, new_field);
+        beta = compute_beta(internal_field, new_field, increment_x);
         internal_field = new_field;
         if (x_step + 1 >= min_iterations && std::abs(beta - beta_old) < abs_tolerance) {
             //converged, so exiting the loop
@@ -153,10 +153,10 @@ double ModeSolver::get_mode_overlap(const multi_array<std::complex<double>, 2> &
 }
 
 double ModeSolver::compute_beta(const multi_array<std::complex<double>, 2> &old_field,
-                                const multi_array<std::complex<double>, 2> &new_field) const {
+                                const multi_array<std::complex<double>, 2> &new_field, const double increment_x) const {
     const double field_log_old = get_field_log(old_field);
     const double field_log_new = get_field_log(new_field);
-    return reference_index * k0 + (field_log_new - field_log_old) / gridPtr->get_dx();
+    return reference_index * k0 + (field_log_new - field_log_old) / increment_x;
 }
 
 double ModeSolver::get_beta() const {

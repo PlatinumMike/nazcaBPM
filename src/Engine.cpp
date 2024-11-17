@@ -15,7 +15,7 @@
 #include <ostream>
 #include <format>
 
-#include "RectangularGrid.h"
+#include "RectangularGrid3D.h"
 
 
 Engine::Engine(const std::string &inputFileName) {
@@ -36,7 +36,7 @@ void Engine::run() const {
     auto ygrid = AuxiliaryFunctions::linspace(inputs.ymin, inputs.ymax, inputs.numy);
     auto zgrid = AuxiliaryFunctions::linspace(inputs.zmin, inputs.zmax, inputs.numz);
 
-    const RectangularGrid grid(xgrid, ygrid, zgrid);
+    const RectangularGrid3D grid(xgrid, ygrid, zgrid);
 
     // define geometry
     const Geometry geometry(inputs.shapes, inputs.background_index);
@@ -82,6 +82,7 @@ void Engine::run() const {
     // output ports
     std::vector<ModeSolver> input_solvers;
     std::vector<ModeSolver> output_solvers;
+    double increment_x = grid.get_dx();
     for (const auto &input_port: inputs.input_ports) {
         int numy_input = static_cast<int>(input_port.get_yspan() * inputs.resolution_y);
         int numz_input = static_cast<int>(input_port.get_zspan() * inputs.resolution_z);
@@ -89,7 +90,7 @@ void Engine::run() const {
         auto ygrid_input = AuxiliaryFunctions::linspace(input_port.get_ymin(), input_port.get_ymax(), numy_input);
         auto zgrid_input = AuxiliaryFunctions::linspace(input_port.get_zmin(), input_port.get_zmax(), numz_input);
 
-        const RectangularGrid grid_input(xgrid, ygrid_input, zgrid_input);
+        const RectangularGrid grid_input(ygrid_input, zgrid_input);
 
         //todo: some issue with the PMl inside of the mode solver, use metal walls for now, but check later on.
         const PML pmly_input(inputs.pml_thickness, 0 * inputs.pml_strength, input_port.get_ymin(),
@@ -100,7 +101,7 @@ void Engine::run() const {
 
         ModeSolver mode_solver(geometry, pmly_input, pmlz_input, grid_input, inputs.scheme_parameter, inputs.k0,
                                inputs.reference_index, input_port);
-        mode_solver.run();
+        mode_solver.run(increment_x);
 
         input_solvers.push_back(mode_solver);
     }
@@ -112,7 +113,7 @@ void Engine::run() const {
         auto ygrid_output = AuxiliaryFunctions::linspace(output_port.get_ymin(), output_port.get_ymax(), numy_output);
         auto zgrid_output = AuxiliaryFunctions::linspace(output_port.get_zmin(), output_port.get_zmax(), numz_output);
 
-        const RectangularGrid grid_output(xgrid, ygrid_output, zgrid_output);
+        const RectangularGrid grid_output(ygrid_output, zgrid_output);
 
         const PML pmly_output(inputs.pml_thickness, 0 * inputs.pml_strength, output_port.get_ymin(),
                               output_port.get_ymax());
@@ -121,8 +122,8 @@ void Engine::run() const {
 
 
         ModeSolver mode_solver(geometry, pmly_output, pmlz_output, grid_output, inputs.scheme_parameter, inputs.k0,
-                                   inputs.reference_index, output_port);
-        mode_solver.run();
+                               inputs.reference_index, output_port);
+        mode_solver.run(increment_x);
 
         output_solvers.push_back(mode_solver);
     }

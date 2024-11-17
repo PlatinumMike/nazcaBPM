@@ -18,8 +18,10 @@ public:
      * This will run the Solver to search for modes.
      * Currently only the fundamental mode is supported.
      * The iterations stop when a certain tolerance is reached, or when the maximum number of iterations is exceeded.
+     * @param increment_x step size in x direction.
+     * This is typically the same as for the main BPM simulation, but you can specify a different step size.
      */
-    void run(int max_iterations = 1000);
+    void run(double increment_x,int max_iterations = 1000);
 
     /**
      * Get the mode overlap
@@ -53,7 +55,7 @@ private:
     void normalize_field(multi_array<std::complex<double>, 2> &field) const;
 
     double compute_beta(const multi_array<std::complex<double>, 2> &old_field,
-                        const multi_array<std::complex<double>, 2> &new_field) const;
+                        const multi_array<std::complex<double>, 2> &new_field, double increment_x) const;
 
     double get_field_log(const multi_array<std::complex<double>, 2> &field) const;
 

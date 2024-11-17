@@ -41,7 +41,9 @@ add_executable(${EXENAME} src/main.cpp
         src/BpmSolver.cpp
         src/BpmSolver.h
         src/ProgressBar.cpp
-        src/ProgressBar.h)
+        src/ProgressBar.h
+        src/RectangularGrid3D.cpp
+        src/RectangularGrid3D.h)
 
 target_link_libraries(${EXENAME} PRIVATE HDF5::HDF5)
 target_link_libraries(${EXENAME} PRIVATE Boost::boost)

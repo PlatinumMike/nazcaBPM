@@ -6,11 +6,12 @@
 #define BPMSOLVER_H
 
 #include "Solver.h"
+#include "RectangularGrid3D.h"
 
 class BpmSolver : public Solver {
 public:
     BpmSolver(const Geometry &geometry, const PML &pmly, const PML &pmlz,
-              const RectangularGrid &grid,
+              const RectangularGrid3D &grid,
               double scheme_parameter, double k0, double reference_index);
 
     /**
@@ -19,6 +20,9 @@ public:
      * @param initial_field Starting field at x=xmin.
      */
     void run(const multi_array<std::complex<double>, 2> &initial_field);
+
+private:
+    const RectangularGrid3D grid3d;
 };
 
 
