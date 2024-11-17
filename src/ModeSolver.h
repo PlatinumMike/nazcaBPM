@@ -10,7 +10,7 @@
 
 class ModeSolver : public Solver {
 public:
-    ModeSolver(const Geometry &geometry, const PML &pmlx, const PML &pmly,
+    ModeSolver(const Geometry &geometry, const PML &pmly, const PML &pmlz,
                const RectangularGrid &grid,
                double scheme_parameter, double k0, double reference_index, const Port &port);
 

@@ -20,9 +20,9 @@ using boost::multi_array;
 
 class Solver {
 public:
-    Solver(const Geometry &geometry, const PML &pmlx, const PML &pmly,
+    Solver(const Geometry &geometry, const PML &pmly, const PML &pmlz,
            const RectangularGrid &grid,
-           double scheme_parameter, double k0, double reference_index, bool mode_solve);
+           double scheme_parameter, double k0, double reference_index);
 
 
     multi_array<double, 2> get_intensity(const multi_array<std::complex<double>, 2> &field) const;
@@ -42,11 +42,13 @@ protected:
      * @param field old field value. This value is not modified.
      * @param x position along the propagation direction
      * @param dx step size in propagation direction
+     * @param propagation_factor i*dx / (2 * k0 * reference_index);
      * @return new field value
      */
     [[nodiscard]] multi_array<std::complex<double>, 2> do_step_cn(const multi_array<std::complex<double>, 2> &field,
                                                                   double x,
-                                                                  double dx) const;
+                                                                  double dx,
+                                                                  std::complex<double> propagation_factor) const;
 
     const RectangularGrid *gridPtr;
     multi_array<std::complex<double>, 2> internal_field;
@@ -59,7 +61,6 @@ private:
     const Geometry *geometryPtr;
     const PML *pmlyPtr;
     const PML *pmlzPtr;
-    const bool mode_solve;
 };
 
 

@@ -13,7 +13,7 @@
 
 #include <iostream>
 #include <ostream>
-#include <chrono>
+#include <format>
 
 #include "RectangularGrid.h"
 
@@ -23,10 +23,10 @@ Engine::Engine(const std::string &inputFileName) {
     //initialize
     _inputs = Readers::readJSON(inputFileName);
 
-    std::cout << "Lx = " << _inputs.domain_len_x << ", Ly = " << _inputs.domain_len_y << ", Lz = " << _inputs.
-            domain_len_z << std::endl;
-    std::cout << "Nx = " << _inputs.numx << ", Ny = " << _inputs.numy << ", Nz = " << _inputs.numz << std::endl;
-    std::cout << "dx = " << _inputs.dx << ", dy = " << _inputs.dy << ", dz = " << _inputs.dz << std::endl;
+    std::cout << std::format("Lx = {}, Ly = {}, Lz = {}\n",
+                             _inputs.domain_len_x, _inputs.domain_len_y, _inputs.domain_len_z);
+    std::cout << std::format("Nx = {}, Ny = {}, Nz = {}\n", _inputs.numx, _inputs.numy, _inputs.numz);
+    std::cout << std::format("dx = {}, dy = {}, dz = {}\n", _inputs.dx, _inputs.dy, _inputs.dz);
 }
 
 void Engine::run() const {
@@ -76,60 +76,75 @@ void Engine::run() const {
     /*
      * Create a 'mini' Solver for each port, that is used to find the modes.
      */
-    //todo: loop over all in/out ports, get modes, then get input profile and pass that into the BpmSolver.
-    // lot of code duplication here. Maybe grid info of a port should be in the Port class?
-    // Also update the input file such that it contains a list of ports that we read in.
-    Port inport0("a0", "left", 0.0, 0.0, 0.0, 6.0, 2.0);
-
-    int numy_a0 = static_cast<int>(inport0.get_yspan() * inputs.resolution_y);
-    int numz_a0 = static_cast<int>(inport0.get_zspan() * inputs.resolution_z);
-
-    auto ygrid_a0 = AuxiliaryFunctions::linspace(inport0.get_ymin(), inport0.get_ymax(), numy_a0);
-    auto zgrid_a0 = AuxiliaryFunctions::linspace(inport0.get_zmin(), inport0.get_zmax(), numz_a0);
-
-    const RectangularGrid grid_a0(xgrid, ygrid_a0, zgrid_a0);
-
-    //todo: some issue with the PMl inside of the mode solver, use metal walls for now, but check later on.
-    const PML pmly_a0(inputs.pml_thickness, 0 * inputs.pml_strength, inport0.get_ymin(), inport0.get_ymax());
-    const PML pmlz_a0(inputs.pml_thickness, 0 * inputs.pml_strength, inport0.get_zmin(), inport0.get_zmax());
-
-
-    ModeSolver mode_solver(geometry, pmly_a0, pmlz_a0, grid_a0, inputs.scheme_parameter, inputs.k0,
-                           inputs.reference_index, inport0);
-    mode_solver.run();
-    auto intial_field = mode_solver.interpolate_field(grid.get_ygrid(), grid.get_zgrid());
-
-
+    //todo: lot of code duplication here. Maybe grid info of a port should be in the Port class?
     //todo: mode solving is not always stable. It does not always converge. Also, a wider WG should have a larger neff, but that is not what the BPM finds...
+    // even if I use a straight waveguide it somehow does not find the same mode at the start and end... investigate further.
     // output ports
-    Port outport0("b0", "right", xgrid.back(), 0.0, 0.0, 6.0, 2.0);
+    std::vector<ModeSolver> input_solvers;
+    std::vector<ModeSolver> output_solvers;
+    for (const auto &input_port: inputs.input_ports) {
+        int numy_input = static_cast<int>(input_port.get_yspan() * inputs.resolution_y);
+        int numz_input = static_cast<int>(input_port.get_zspan() * inputs.resolution_z);
 
-    int numy_b0 = static_cast<int>(outport0.get_yspan() * inputs.resolution_y);
-    int numz_b0 = static_cast<int>(outport0.get_zspan() * inputs.resolution_z);
+        auto ygrid_input = AuxiliaryFunctions::linspace(input_port.get_ymin(), input_port.get_ymax(), numy_input);
+        auto zgrid_input = AuxiliaryFunctions::linspace(input_port.get_zmin(), input_port.get_zmax(), numz_input);
 
-    auto ygrid_b0 = AuxiliaryFunctions::linspace(outport0.get_ymin(), outport0.get_ymax(), numy_b0);
-    auto zgrid_b0 = AuxiliaryFunctions::linspace(outport0.get_zmin(), outport0.get_zmax(), numz_b0);
+        const RectangularGrid grid_input(xgrid, ygrid_input, zgrid_input);
 
-    const RectangularGrid grid_b0(xgrid, ygrid_b0, zgrid_b0);
+        //todo: some issue with the PMl inside of the mode solver, use metal walls for now, but check later on.
+        const PML pmly_input(inputs.pml_thickness, 0 * inputs.pml_strength, input_port.get_ymin(),
+                             input_port.get_ymax());
+        const PML pmlz_input(inputs.pml_thickness, 0 * inputs.pml_strength, input_port.get_zmin(),
+                             input_port.get_zmax());
 
-    const PML pmly_b0(inputs.pml_thickness, 0 * inputs.pml_strength, outport0.get_ymin(), outport0.get_ymax());
-    const PML pmlz_b0(inputs.pml_thickness, 0 * inputs.pml_strength, outport0.get_zmin(), outport0.get_zmax());
+
+        ModeSolver mode_solver(geometry, pmly_input, pmlz_input, grid_input, inputs.scheme_parameter, inputs.k0,
+                               inputs.reference_index, input_port);
+        mode_solver.run();
+
+        input_solvers.push_back(mode_solver);
+    }
+
+    for (const auto &output_port: inputs.output_ports) {
+        int numy_output = static_cast<int>(output_port.get_yspan() * inputs.resolution_y);
+        int numz_output = static_cast<int>(output_port.get_zspan() * inputs.resolution_z);
+
+        auto ygrid_output = AuxiliaryFunctions::linspace(output_port.get_ymin(), output_port.get_ymax(), numy_output);
+        auto zgrid_output = AuxiliaryFunctions::linspace(output_port.get_zmin(), output_port.get_zmax(), numz_output);
+
+        const RectangularGrid grid_output(xgrid, ygrid_output, zgrid_output);
+
+        const PML pmly_output(inputs.pml_thickness, 0 * inputs.pml_strength, output_port.get_ymin(),
+                              output_port.get_ymax());
+        const PML pmlz_output(inputs.pml_thickness, 0 * inputs.pml_strength, output_port.get_zmin(),
+                              output_port.get_zmax());
 
 
-    ModeSolver mode_solver_out(geometry, pmly_b0, pmlz_b0, grid_b0, inputs.scheme_parameter, inputs.k0,
-                               inputs.reference_index, outport0);
-    mode_solver_out.run();
+        ModeSolver mode_solver(geometry, pmly_output, pmlz_output, grid_output, inputs.scheme_parameter, inputs.k0,
+                                   inputs.reference_index, output_port);
+        mode_solver.run();
+
+        output_solvers.push_back(mode_solver);
+    }
 
     /*
      * Now create the main simulation Solver, and run it.
      */
     BpmSolver bpm_solver(geometry, pmly, pmlz, grid, inputs.scheme_parameter, inputs.k0,
                          inputs.reference_index);
+
+    // get initial field from the input mode.
+    //todo: for now this only works for one input port at a time. If we have multiple input ports only the first is used.
+    // update such that you can use multiple at the same time.
+    auto intial_field = input_solvers.front().interpolate_field(grid.get_ygrid(), grid.get_zgrid());
     bpm_solver.run(intial_field);
     //todo: call function solver.save_data() or something to save/extract data after the solve is completed.
 
-    auto final_field = bpm_solver.interpolate_field(ygrid_b0, zgrid_b0);
-
-    double coef_b0 = mode_solver_out.get_mode_overlap(final_field);
-    std::cout << std::format("Coupling coefficient is {}", coef_b0) << std::endl;
+    //todo: update the bit below.
+    // auto ygrid_output = AuxiliaryFunctions::linspace(output_port.get_ymin(), output_port.get_ymax(), numy_output);
+    // auto zgrid_output = AuxiliaryFunctions::linspace(output_port.get_zmin(), output_port.get_zmax(), numz_output);
+    // auto final_field = bpm_solver.interpolate_field(ygrid_output, zgrid_output);
+    //
+    // double coef_b0 = output_solvers.front().get_mode_overlap(final_field);
+    // std::cout << std::format("Coupling coefficient is {}", coef_b0) << std::endl;
 }

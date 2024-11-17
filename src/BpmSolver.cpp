@@ -4,14 +4,11 @@
 
 #include "BpmSolver.h"
 #include "FieldMonitor.h"
+#include "ProgressBar.h"
 
-#include <iostream>
-#include <ostream>
-#include <chrono>
-
-BpmSolver::BpmSolver(const Geometry &geometry, const PML &pmlx, const PML &pmly, const RectangularGrid &grid,
+BpmSolver::BpmSolver(const Geometry &geometry, const PML &pmly, const PML &pmlz, const RectangularGrid &grid,
                      const double scheme_parameter, const double k0, const double reference_index) : Solver(
-    geometry, pmlx, pmly, grid, scheme_parameter, k0, reference_index, false) {
+    geometry, pmly, pmlz, grid, scheme_parameter, k0, reference_index) {
 }
 
 void BpmSolver::run(const multi_array<std::complex<double>, 2> &initial_field) {
@@ -46,43 +43,19 @@ void BpmSolver::run(const multi_array<std::complex<double>, 2> &initial_field) {
                                 numx, numz);
     field_slice_xz.populate(ygrid, zgrid, internal_field, 0);
 
-    const int index_1percent = numx / 100;
-    const int index_10percent = numx / 10;
-    const int index_50percent = numx / 2;
 
-    const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    const std::complex<double> propagation_factor = gridPtr->get_dx() / (2.0 * k0 * reference_index)
+                                                    * std::complex<double>{0.0, 1.0};
+
+    ProgressBar progress_bar(numx);
     for (int x_step = 1; x_step < numx; x_step++) {
         const double current_x = xgrid[x_step - 1];
-        internal_field = do_step_cn(internal_field, current_x, gridPtr->get_dx());
+        internal_field = do_step_cn(internal_field, current_x, gridPtr->get_dx(), propagation_factor);
         field_slice_xy.populate(ygrid, zgrid, internal_field, x_step);
         field_slice_xz.populate(ygrid, zgrid, internal_field, x_step);
-        //printing rough indication of simulation progress
-        if (x_step == index_1percent) {
-            std::cout << "1% reached" << std::endl;
-            auto end = std::chrono::steady_clock::now();
-            auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-            std::cout << "Elapsed time = " << delta << " (s), expected total run time = " << delta * 100 << " (s)" <<
-                    std::endl;
-        }
-        if (x_step == index_10percent) {
-            std::cout << "10% reached" << std::endl;
-            auto end = std::chrono::steady_clock::now();
-            auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-            std::cout << "Elapsed time = " << delta << " (s), expected total run time = " << delta * 10 << " (s)" <<
-                    std::endl;
-        }
-        if (x_step == index_50percent) {
-            std::cout << "50% reached" << std::endl;
-            auto end = std::chrono::steady_clock::now();
-            auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-            std::cout << "Elapsed time = " << delta << " (s), expected total run time = " << delta * 2 << " (s)" <<
-                    std::endl;
-        }
+        progress_bar.update(x_step);
     }
-    std::cout << "Engine run completed" << std::endl;
-    auto end = std::chrono::steady_clock::now();
-    auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-    std::cout << "Elapsed time = " << delta << " (s)" << std::endl;
+    progress_bar.finalize();
 
     FieldMonitor end_field(gridPtr->get_ymin(), gridPtr->get_ymax(), gridPtr->get_zmin(), gridPtr->get_zmax(), 'x', 0.0,
                            numy, numz);

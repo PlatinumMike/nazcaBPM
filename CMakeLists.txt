@@ -39,7 +39,9 @@ add_executable(${EXENAME} src/main.cpp
         src/ModeSolver.cpp
         src/ModeSolver.h
         src/BpmSolver.cpp
-        src/BpmSolver.h)
+        src/BpmSolver.h
+        src/ProgressBar.cpp
+        src/ProgressBar.h)
 
 target_link_libraries(${EXENAME} PRIVATE HDF5::HDF5)
 target_link_libraries(${EXENAME} PRIVATE Boost::boost)

@@ -18,10 +18,9 @@ using boost::extents;
 Solver::Solver(const Geometry &geometry, const PML &pmly, const PML &pmlz,
                const RectangularGrid &grid,
                const double scheme_parameter, const double k0,
-               const double reference_index, const bool mode_solve): k0(k0),
-                                                                     reference_index(reference_index),
-                                                                     scheme_parameter(scheme_parameter),
-                                                                     mode_solve(mode_solve) {
+               const double reference_index): k0(k0),
+                                              reference_index(reference_index),
+                                              scheme_parameter(scheme_parameter) {
     geometryPtr = &geometry;
     pmlyPtr = &pmly;
     pmlzPtr = &pmlz;
@@ -36,17 +35,12 @@ Solver::Solver(const Geometry &geometry, const PML &pmly, const PML &pmlz,
 // suggested solution: include the boundary points in the matrix, but overrule that row, and rhs entry to force the solution to zero on the edges.
 // todo: also, a lot of code duplication here in do_step_cn, and get_rhs. Generalize, then clean up.
 multi_array<std::complex<double>, 2> Solver::do_step_cn(const multi_array<std::complex<double>, 2> &field,
-                                                        const double x, const double dx) const {
+                                                        const double x, const double dx,
+                                                        const std::complex<double> propagation_factor) const {
     auto ygrid = gridPtr->get_ygrid();
     auto zgrid = gridPtr->get_zgrid();
     int numy = static_cast<int>(ygrid.size());
     int numz = static_cast<int>(zgrid.size());
-
-    std::complex<double> base = dx / (2.0 * k0 * reference_index) * std::complex<double>{0.0, 1.0};
-    if (mode_solve) {
-        //For the Imaginary distance method we propagate along ix instead of x.
-        base *= std::complex<double>{0.0, 1.0};
-    }
 
     // get index in slice
     multi_array<double, 2> index_slice(extents[numy][numz]);
@@ -56,14 +50,14 @@ multi_array<std::complex<double>, 2> Solver::do_step_cn(const multi_array<std::c
         }
     }
     // prefactor is p=(alpha-1)*dx*i/(2k0*n0).
-    const std::complex<double> preFactorRHS = (scheme_parameter - 1.0) * base;
+    const std::complex<double> preFactorRHS = (scheme_parameter - 1.0) * propagation_factor;
 
     //get RHS vector, store as multi-array.
     auto rhs = OperatorSuite::get_rhs(field, ygrid, zgrid, index_slice, reference_index, k0, preFactorRHS, pmlyPtr,
                                       pmlzPtr);
 
 
-    const auto preFactorLHS = scheme_parameter * base;
+    const auto preFactorLHS = scheme_parameter * propagation_factor;
 
     //solver for half step field
     multi_array<std::complex<double>, 2> half_step(extents[numy][numz]);

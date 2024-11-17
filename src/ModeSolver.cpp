@@ -9,12 +9,11 @@
 
 using boost::extents;
 
-ModeSolver::ModeSolver(const Geometry &geometry, const PML &pmlx, const PML &pmly,
+ModeSolver::ModeSolver(const Geometry &geometry, const PML &pmly, const PML &pmlz,
                        const RectangularGrid &grid, const double scheme_parameter, const double k0,
                        const double reference_index, const Port &port): Solver(
-                                                                            geometry, pmlx, pmly, grid,
-                                                                            scheme_parameter, k0, reference_index,
-                                                                            true),
+                                                                            geometry, pmly, pmlz, grid,
+                                                                            scheme_parameter, k0, reference_index),
                                                                         port(port) {
     beta = 0.0;
     neff = 0.0;
@@ -36,8 +35,13 @@ void ModeSolver::run(const int max_iterations) {
     bool mode_found = false;
     double iterations_used = 0;
 
+    //For the Imaginary distance method we propagate along ix instead of x.
+    const std::complex<double> propagation_factor = gridPtr->get_dx() / (2.0 * k0 * reference_index)
+                                                    * std::complex<double>{-1.0, 0.0};
+
     for (int x_step = 0; x_step < max_iterations; x_step++) {
-        auto new_field = do_step_cn(internal_field, port.get_x0(), gridPtr->get_dx());
+        // pass x=x0, and dx=0 because we do not need to advance in x. That is only used to get the index, and we want to mimic an infinitely long straight waveguide.
+        auto new_field = do_step_cn(internal_field, port.get_x0(), 0.0, propagation_factor);
         beta = compute_beta(internal_field, new_field);
         internal_field = new_field;
         if (x_step + 1 >= min_iterations && std::abs(beta - beta_old) < abs_tolerance) {
