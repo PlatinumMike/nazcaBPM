@@ -1,9 +1,17 @@
-# TODO: switch to alpine build for smaller filesize. And/or a multi-stage build to save space.
-FROM ubuntu:24.04
+# TODO: Use a multi-stage build to save space.
+# Tested on alpine 3.20
+FROM alpine:latest
 # install dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends libhdf5-dev libboost-all-dev cmake make g++ && \
-    apt-get clean
+RUN apk update \
+    && apk upgrade \
+    && apk add --no-cache \
+    clang \
+    clang-dev \
+    make \
+    cmake \
+    boost-dev \
+    hdf5-dev
+
 
 RUN mkdir -p /app/src
 # copy files

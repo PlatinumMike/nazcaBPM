@@ -7,7 +7,7 @@
 
 #include <vector>
 #include <cstdint>
-#include <hdf5/serial/H5Cpp.h>
+#include <H5Cpp.h>
 #include <boost/multi_array.hpp>
 
 //!_______________________________________________________________________________________
