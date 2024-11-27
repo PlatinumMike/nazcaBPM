@@ -3,6 +3,10 @@ project(nazcaBPM)
 
 set(CMAKE_CXX_STANDARD 20)
 
+if(POLICY CMP0167)
+    cmake_policy(SET CMP0167 NEW)
+endif()
+
 find_package(Boost 1.70 REQUIRED)
 find_package(HDF5 1.10 REQUIRED COMPONENTS CXX)
 
