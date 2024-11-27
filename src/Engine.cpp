@@ -22,6 +22,7 @@ Engine::Engine(const std::string &inputFileName) {
     std::cout << "Initializing engine" << std::endl;
     //initialize
     _inputs = Readers::readJSON(inputFileName);
+    std::cout << "Simulation data to be stored in " << _inputs.absolute_path_output.string() << std::endl;
 
     std::cout << std::format("Lx = {}, Ly = {}, Lz = {}\n",
                              _inputs.domain_len_x, _inputs.domain_len_y, _inputs.domain_len_z);
@@ -31,6 +32,8 @@ Engine::Engine(const std::string &inputFileName) {
 
 void Engine::run() const {
     const Parameters inputs = _inputs; //make a const copy, to avoid accidental modification of input variables.
+
+    auto index_path = inputs.absolute_path_output;
 
     auto xgrid = AuxiliaryFunctions::linspace(inputs.xmin, inputs.xmax, inputs.numx);
     auto ygrid = AuxiliaryFunctions::linspace(inputs.ymin, inputs.ymax, inputs.numy);
@@ -50,23 +53,27 @@ void Engine::run() const {
                             0.0,
                             inputs.numy, inputs.numz);
     monitor_x0.populate(geometry);
-    monitor_x0.save_data("index_yz_start.h5");
+    index_path.append("index_yz_start.h5");
+    monitor_x0.save_data(index_path.string());
 
     IndexMonitor monitor_x1(grid.get_ymin(), grid.get_ymax(), grid.get_zmin(), grid.get_zmax(), 'x',
                             xgrid.back(),
                             inputs.numy, inputs.numz);
     monitor_x1.populate(geometry);
-    monitor_x1.save_data("index_yz_end.h5");
+    index_path.replace_filename("index_yz_end.h5");
+    monitor_x1.save_data(index_path);
 
     IndexMonitor monitor_y(grid.get_xmin(), grid.get_xmax(), grid.get_zmin(), grid.get_zmax(), 'y', 0.0,
                            inputs.numx, inputs.numz);
     monitor_y.populate(geometry);
-    monitor_y.save_data("index_xz.h5");
+    index_path.replace_filename("index_xz.h5");
+    monitor_y.save_data(index_path);
 
     IndexMonitor monitor_z(grid.get_xmin(), grid.get_xmax(), grid.get_ymin(), grid.get_ymax(), 'z', 0.0,
                            inputs.numx, inputs.numy);
     monitor_z.populate(geometry);
-    monitor_z.save_data("index_xy.h5");
+    index_path.replace_filename("index_xy.h5");
+    monitor_z.save_data(index_path);
 
     if (inputs.dry_run) {
         std::cout << "Finished dry run." << std::endl;
@@ -115,7 +122,7 @@ void Engine::run() const {
      * Now create the main simulation Solver, and run it.
      */
     BpmSolver bpm_solver(geometry, pmly, pmlz, grid, inputs.scheme_parameter, inputs.k0,
-                         inputs.reference_index);
+                         inputs.reference_index, inputs.absolute_path_output);
 
     // get initial field from the input mode.
     //todo: for now this only works for one input port at a time. If we have multiple input ports only the first is used.

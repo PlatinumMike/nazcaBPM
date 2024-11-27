@@ -5,6 +5,8 @@
 #ifndef BPMSOLVER_H
 #define BPMSOLVER_H
 
+#include <filesystem>
+
 #include "Solver.h"
 #include "RectangularGrid3D.h"
 
@@ -12,7 +14,8 @@ class BpmSolver : public Solver {
 public:
     BpmSolver(const Geometry &geometry, const PML &pmly, const PML &pmlz,
               const RectangularGrid3D &grid,
-              double scheme_parameter, double k0, double reference_index);
+              double scheme_parameter, double k0, double reference_index,
+              const std::filesystem::path &absolute_path_output);
 
     /**
      * Run the BPM simulation.
@@ -23,6 +26,7 @@ public:
 
 private:
     const RectangularGrid3D grid3d;
+    const std::filesystem::path absolute_path_output;
 };
 
 

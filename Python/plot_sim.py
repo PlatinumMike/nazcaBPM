@@ -39,7 +39,7 @@ def get_field(filename: str, grid1: str, grid2: str):
 # %% load files
 
 dirname = os.path.dirname(__file__)
-build_dir = os.path.join(os.path.dirname(dirname), "build")
+build_dir = os.path.join(os.path.dirname(dirname), "simulations")
 field_yz_start = get_field(os.path.join(build_dir, "field_yz_start.h5"), "ygrid", "zgrid")
 field_yz_end = get_field(os.path.join(build_dir, "field_yz_end.h5"), "ygrid", "zgrid")
 field_xz = get_field(os.path.join(build_dir, "field_xz.h5"), "xgrid", "zgrid")

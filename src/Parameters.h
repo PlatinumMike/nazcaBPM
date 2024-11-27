@@ -5,6 +5,7 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
+#include <filesystem>
 #include "Geometry.h"
 #include "Port.h"
 
@@ -43,6 +44,8 @@ struct Parameters {
     // If dry_run is true, just load the parameters, evaluate refractive index on the grid and exit the program.
     // This is useful before launching a big simulation. You want to know if you are modeling the correct thing before launching into a long run.
     bool dry_run;
+
+    std::filesystem::path absolute_path_output; //absolute path of where the generated files are to be stored.
 
 
     std::vector<Shape> shapes;

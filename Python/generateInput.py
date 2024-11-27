@@ -8,6 +8,11 @@ import json
 # user inputs:
 jsonFileName = "./inputs.json"
 
+# place to store the simulation files
+this_dir = os.path.dirname(__file__)
+root = os.path.dirname(this_dir)
+working_dir = os.path.join(root, "simulations")
+
 # simple taper geometry
 
 width1 = 1.000
@@ -102,6 +107,7 @@ dataDict = {
     "dry_run": False,
     "input_ports": inports,
     "output_ports": outports,
+    "absolute_path_output": working_dir,
 }
 
 # convert to JSON

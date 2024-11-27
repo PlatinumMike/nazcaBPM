@@ -43,6 +43,8 @@ Parameters Readers::readJSON(const std::string &inputFileName) {
     inputs.pml_thickness = root.get<double>("pml_thickness");
     inputs.scheme_parameter = root.get<double>("scheme_parameter");
     inputs.dry_run = root.get<bool>("dry_run");
+    auto abs_path = root.get<std::string>("absolute_path_output");
+    inputs.absolute_path_output = abs_path;
 
 
     inputs.domain_len_x = inputs.xmax - inputs.xmin;

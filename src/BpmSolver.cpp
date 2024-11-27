@@ -7,8 +7,12 @@
 #include "ProgressBar.h"
 
 BpmSolver::BpmSolver(const Geometry &geometry, const PML &pmly, const PML &pmlz, const RectangularGrid3D &grid,
-                     const double scheme_parameter, const double k0, const double reference_index) : Solver(
-        geometry, pmly, pmlz, grid, scheme_parameter, k0, reference_index), grid3d(grid) {
+                     const double scheme_parameter, const double k0, const double reference_index,
+                     const std::filesystem::path &absolute_path_output) : Solver(
+                                                                              geometry, pmly, pmlz, grid,
+                                                                              scheme_parameter, k0,
+                                                                              reference_index), grid3d(grid),
+                                                                          absolute_path_output(absolute_path_output) {
 }
 
 void BpmSolver::run(const multi_array<std::complex<double>, 2> &initial_field) {
@@ -20,13 +24,16 @@ void BpmSolver::run(const multi_array<std::complex<double>, 2> &initial_field) {
     int numy = static_cast<int>(grid3d.get_numy());
     int numz = static_cast<int>(grid3d.get_numz());
 
+    std::filesystem::path output_path = absolute_path_output;
+
     internal_field = initial_field;
 
     FieldMonitor start_field(grid3d.get_ymin(), grid3d.get_ymax(), grid3d.get_zmin(), grid3d.get_zmax(), 'x',
                              0.0,
                              numy, numz);
     start_field.populate(ygrid, zgrid, internal_field, 0);
-    start_field.save_data("field_yz_start.h5");
+    output_path.append("field_yz_start.h5");
+    start_field.save_data(output_path.string());
 
     //slice at z=0
     FieldMonitor field_slice_xy(grid3d.get_xmin(), grid3d.get_xmax(), grid3d.get_ymin(), grid3d.get_ymax(), 'z',
@@ -57,8 +64,11 @@ void BpmSolver::run(const multi_array<std::complex<double>, 2> &initial_field) {
     FieldMonitor end_field(grid3d.get_ymin(), grid3d.get_ymax(), grid3d.get_zmin(), grid3d.get_zmax(), 'x', 0.0,
                            numy, numz);
     end_field.populate(ygrid, zgrid, internal_field, 0);
-    end_field.save_data("field_yz_end.h5");
+    output_path.replace_filename("field_yz_end.h5");
+    end_field.save_data(output_path.string());
 
-    field_slice_xy.save_data("field_xy.h5");
-    field_slice_xz.save_data("field_xz.h5");
+    output_path.replace_filename("field_xy.h5");
+    field_slice_xy.save_data(output_path.string());
+    output_path.replace_filename("field_xz.h5");
+    field_slice_xz.save_data(output_path.string());
 }
