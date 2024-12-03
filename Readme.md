@@ -53,7 +53,7 @@ Then prepare a json input file as usual, and run the container with:
 
 `docker run --rm -v ./:/mnt/workdir nazca-bpm:0.2.0 /mnt/workdir/Python/inputs.json`
 
-The version can be specified after the colon, e.g. `0.2.0` in this case. The tag `nazca-bpm` is also abitrary, it is just a name. The `-v ./` mounts the current working directory to `/mnt/workdir` inside the container. So you can then specify where the json file is w.r.t. that.
+The version can be specified after the colon, e.g. `0.2.0` in this case. The tag `nazca-bpm` is also abitrary, it is just a name. The `-v ./` mounts the current working directory to `/mnt/workdir` inside the container. So you can then specify where the json file is w.r.t. that. In this example your json input file should contain `"absolute_path_output": "/mnt/workdir"` so that in the docker it will write the data it produces into the mounted directory.
 
 ## Common issues:
 
