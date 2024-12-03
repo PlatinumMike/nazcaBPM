@@ -52,7 +52,7 @@ add_executable(${EXENAME} src/main.cpp
 target_link_libraries(${EXENAME} PRIVATE HDF5::HDF5)
 target_link_libraries(${EXENAME} PRIVATE Boost::boost)
 
-set(ENABLE_TEST 1)
+#set(ENABLE_TEST 1)
 
 if (ENABLE_TEST)
     add_executable(testSuite.x test/test.cpp src/TriDiag.h src/Polygon.cpp src/Polygon.h src/AuxiliaryFunctions.cpp src/AuxiliaryFunctions.h src/Geometry.cpp src/Geometry.h
