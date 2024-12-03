@@ -9,7 +9,7 @@
 #include "Geometry.h"
 #include <boost/multi_array.hpp>
 
-#include "ModeHandler.h"
+
 #include "PML.h"
 #include "RectangularGrid.h"
 using boost::multi_array;
@@ -20,40 +20,47 @@ using boost::multi_array;
 
 class Solver {
 public:
-    Solver(const Geometry &geometry, const PML &pmlx, const PML &pmly, const ModeHandler &source,
+    Solver(const Geometry &geometry, const PML &pmly, const PML &pmlz,
            const RectangularGrid &grid,
            double scheme_parameter, double k0, double reference_index);
 
-    void run();
 
     multi_array<double, 2> get_intensity(const multi_array<std::complex<double>, 2> &field) const;
 
-private:
-    double scheme_parameter = 0.5;
-    double k0;
-    double reference_index;
-    // pointers to simulation objects
-    const Geometry *geometryPtr;
-    const PML *pmlyPtr;
-    const PML *pmlzPtr;
-    const ModeHandler *sourcePtr;
-    const RectangularGrid *gridPtr;
+    /**
+     * Interpolate the internal field on a given new grid.
+     * @param ygrid_new new y coordinates
+     * @param zgrid_new new z coordinates
+     * @return field on the new coordinates.
+     */
+    multi_array<std::complex<double>, 2> interpolate_field(const std::vector<double> &ygrid_new,
+                                                           const std::vector<double> &zgrid_new) const;
 
-
-    void record_slice(const multi_array<std::complex<double>, 2> &buffer,
-                      multi_array<std::complex<double>, 2> &storage, int idx, bool slice_y) const;
-
-    void dump_index_slice(const std::string &filename, char direction, double slice_position) const;
-
+protected:
     /**
      * Do one step in propagation direction with the Crank-Nicolson scheme
      * @param field old field value. This value is not modified.
      * @param x position along the propagation direction
      * @param dx step size in propagation direction
+     * @param propagation_factor i*dx / (2 * k0 * reference_index);
      * @return new field value
      */
-    multi_array<std::complex<double>, 2> do_step_cn(const multi_array<std::complex<double>, 2> &field, double x,
-                                                    double dx) const;
+    [[nodiscard]] multi_array<std::complex<double>, 2> do_step_cn(const multi_array<std::complex<double>, 2> &field,
+                                                                  double x,
+                                                                  double dx,
+                                                                  std::complex<double> propagation_factor) const;
+
+    const RectangularGrid *gridPtr;
+    multi_array<std::complex<double>, 2> internal_field;
+    const double k0;
+    const double reference_index;
+
+private:
+    const double scheme_parameter = 0.5;
+    // pointers to simulation objects
+    const Geometry *geometryPtr;
+    const PML *pmlyPtr;
+    const PML *pmlzPtr;
 };
 
 

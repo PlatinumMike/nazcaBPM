@@ -251,39 +251,47 @@
 		\label{double_derivative}
 	\end{equation}
 	
+
 	Rearranging Eq. \eqref{scalar_eq_discretized} gives:
 	\begin{equation}
-		\left(1+\frac{i\alpha \Delta x}{2k_0 n_0}(G_y+G_z) \right) u^{r+1} = \left(1-\frac{i(1-\alpha) \Delta x}{2k_0 n_0}(G_y+G_z) \right) u^r \, .
+		\left[1+\alpha \rho(G_y+G_z) \right] u^{r+1} = \left[1-(1-\alpha)\rho(G_y+G_z) \right] u^r \, .
+		\label{eq_mid}
 	\end{equation}
-	The operator on the left hand side (LHS) is a matrix with five non-zero diagonal bands. In order to factor it into two tri-diagonal matrices we add a negligible extra term on both the LFS and RHS:
+	To keep it succinct we have defined:
+	\begin{equation}
+		\rho:=\frac{i\Delta x}{2k_0 n_0}.
+		\label{rho_eq}
+	\end{equation}
+	
+	The operator on the left hand side (LHS) of Eq. \eqref{eq_mid} is a matrix with five non-zero diagonal bands. In order to factor it into two tri-diagonal matrices we add a negligible extra term on both the LFS and RHS:
 	
 	\begin{multline*}
-		\left(1+\frac{i\alpha \Delta x}{2k_0 n_0}(G_y+G_z) + \left(\frac{i\alpha \Delta x}{2k_0 n_0} \right) ^2 G_y G_z \right) u^{r+1} =\\
-		 \left(1-\frac{i(1-\alpha) \Delta x}{2k_0 n_0}(G_y+G_z) +\left( \frac{i(1-\alpha) \Delta x}{2k_0 n_0}\right)^2 G_y G_z \right) u^r \, ,
+		\left[1+\alpha \rho(G_y+G_z) + \alpha^2 \rho^2 G_y G_z \right] u^{r+1} =\\
+		 \left[1-(1-\alpha)\rho (G_y+G_z) +(1-\alpha)^2\rho^2 G_y G_z \right] u^r \, ,
 	\end{multline*}
 	which we can factor to get:
-	\begin{multline}
-		\left(1+\frac{i\alpha \Delta x}{2k_0 n_0}G_y \right)\left(1+\frac{i\alpha \Delta x}{2k_0 n_0}G_z \right) u^{r+1} = \\
-		\left(1-\frac{i(1-\alpha) \Delta x}{2k_0 n_0}G_y \right)\left(1-\frac{i(1-\alpha) \Delta x}{2k_0 n_0}G_z \right) u^r \, .
+	\begin{equation}
+		\left(1+\alpha \rho G_y \right)\left(1+\alpha \rho G_z \right) u^{r+1} = \\
+		\left[1-(1-\alpha)\rho G_y \right]\left[1-(1-\alpha)\rho G_z \right] u^r \, .
 		\label{ADI_setup}
-	\end{multline}
+	\end{equation}
 	
 	Note: up to here we followed along the lines of the book\cite{Lifante_2015}. But I don't understand what Lifante does next. In Eq. (3.78) there is the $G_z$ operator, not the $G_y$ operator. Surely you would ``peel away'' one operator by multiplying with the inverse from the left on both sides, which means we invert the operator with $G_y$ first, then $G_z$... I am not sure that is correct.\\
 	
 	So we will now follow the procedure of Masoudi, chapter 6.2.1 \cite{masoudi1995parallel}, since this is what I would have done too. First we define the following vectors:
 	\begin{subequations}
 		\begin{align}
-			V^r &:= \left(1+\frac{i\alpha \Delta x}{2k_0 n_0}G_z \right) u^r\, ,\\
-			W^r &:= \left(1-\frac{i(1-\alpha) \Delta x}{2k_0 n_0}G_y \right)\left(1-\frac{i(1-\alpha) \Delta x}{2k_0 n_0}G_z \right) u^r \, .
+			V^r &:= \left(1+\alpha \rho G_z \right) u^r\, ,\\
+			W^r &:= \left[1-(1-\alpha)\rho G_y \right]\left[1-(1-\alpha)\rho G_z \right] u^r \, .
 		\end{align}
 	\end{subequations}
 	This is just a definition, so no further approximations are made. Eq. \eqref{ADI_setup} can be written as:
 	\begin{equation}
-		\left(1+\frac{i\alpha \Delta x}{2k_0 n_0}G_y \right) V^{r+1} = W^r\, .
+		\left(1+\alpha \rho G_y \right) V^{r+1} = W^r\, .
 	\end{equation}
 	The right hand side is readily computed, it only needs the old field values, which are known. The vector $V^{r+1}$ is yet to be determined, so the first step is to invert the operator on the left. Since it contains only the derivative in one direction this is a tri-diagonal matrix\footnote{Strictly speaking it is not tri-diagonal. The bands are not near the diagonal, they are $Q$ bands away because of the formatting of the solution vector. The next grid neighbor in $y$ direction is $Q$ rows down in Eq. \eqref{uvector}. This is no problem though, you could just reformat it into $Q$ independent problems with each a tri-diagonal matrix. Solve it, then format back. Note, this reformatting is just a way of explaining the math, in the actual implementation this can be skipped for more efficient memory usage.}, which we can rapidly solve with the Thomas algorithm. Now that we have $V^{r+1}$, the last step is to solve for $u^{r+1}$ in yet another tri-diagonal problem:
 	\begin{equation}
-		\left(1+\frac{i\alpha \Delta x}{2k_0 n_0}G_z \right) u^{r+1} = V^{r+1}\, .
+		\left(1+\alpha \rho G_z \right) u^{r+1} = V^{r+1}\, .
 	\end{equation}
 	
 	\subsection{Boundary conditions}
@@ -319,6 +327,20 @@
 	
 	
 	Clarification about the BCs: You can choose to set $u$ to zero on the actual wall of the domain. Or set $u=0$ outside the domain, but let the value on the boundary vary freely. The distinction seems irrelevant, since we are interested in open domains anyway. However, the latter approach may be easier to implement, as you do not need to skip over the first and last row+column of the grid. You can just loop over all matrix entries, then where-ever the derivative requires outside information you just use zero. However, this will also require outside information for the index $n$. This is dangerous because the index outside the domain is invisible to the end-user. So we will go with the first option, setting $u=0$ on the actual wall.
+	
+	\subsection{Mode solving}
+	In order to initialize the BPM simulation, we need to specify $u(0,y,z)$. This could be a plane wave, a Gaussian beam, but most commonly we wish to use a mode source. We could rely on an external mode solver such as WGMS3D. Such a solver is quite advanced an solves very accurately for the quasi-modes (full vectorial). This is nice, but overkill because it is richer in physics than the BPM that is implemented here. In fact, this extra physics (and difference in grids) will be detrimental because the mode is slightly different than what the BPM would find. This means that one WGMS3D mode will excite multiple ``BPM modes''. Hopefully these radiate out quickly but it is unclear how long that takes. Therefore it is highly recommended to solve for modes in the same model, and with the same grid as you would use for the rest of the simulation. As recommended in the book \cite{Lifante_2015}, section 2.7, we will use the imaginary distance method, aka ``Im-Dis'' BPM.\\
+	
+	In Eq. \eqref{scalar_eq} we replace $x$ by $ix$. This is simple to implement, just replace $\Delta x$ by $i \Delta x$ in Eq. \eqref{rho_eq}. The light propagates along the imaginary axis and the mode that grows the fastest (or decays the slowest) is the fundamental mode. Once found you can subtract it from the input profile and run again to find the higher order modes. To get the propagation constant of the mode use:
+	\begin{equation}
+		\beta = k_0 n_0 + \frac{1}{\Delta x}\left[\ln\left( \int \int u(i(x+\Delta x),y,z)  dy dz \right) -\ln\left( \int \int u(ix,y,z)  dy dz \right)  \right] \, .
+	\end{equation}
+	For sufficiently large $x$ this should reach a steady state.
+	
+	When using PML boundary conditions the field appears to diverge. This is a known issue of the Im-Dis method \cite{Shibayama_Yamazaki_Yamauchi_Nakano_2005}. As workaround, we will use metal boundary conditions for the mode solve step, which should still obtain accurate results if the bounding box is sufficiently large. For the actual BPM simulation we can still use the normal PML boundary conditions.
+	
+	
+	% todo: explain story about ports and so on. Also, mention which options for ports I investigated, and why I settled on a specific one. Then mention that the grid is slightly different compared to the rest of the simulation, which is almost unavoidable if you want to keep it flexible.
 
 	
 	\bibliographystyle{ieeetr}

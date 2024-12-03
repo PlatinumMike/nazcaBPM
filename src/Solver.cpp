@@ -3,184 +3,40 @@
 //
 
 #include "Solver.h"
-#include "IO/Readers.h"
-#include "IO/hdf_writer.h"
 #include "OperatorSuite.h"
+#include "GridInterpolator.h"
 
 #include <cmath>
 #include <complex>
-#include <iostream>
-#include <ostream>
 #include <vector>
 #include <algorithm>
-#include <cassert>
-#include <chrono>
 
-#include <hdf5/serial/H5Cpp.h>
 #include <boost/multi_array.hpp>
 using boost::multi_array;
 using boost::extents;
 
-Solver::Solver(const Geometry &geometry, const PML &pmly, const PML &pmlz, const ModeHandler &source,
+Solver::Solver(const Geometry &geometry, const PML &pmly, const PML &pmlz,
                const RectangularGrid &grid,
                const double scheme_parameter, const double k0,
-               const double reference_index): scheme_parameter(scheme_parameter),
-                                              k0(k0), reference_index(reference_index) {
+               const double reference_index): k0(k0),
+                                              reference_index(reference_index),
+                                              scheme_parameter(scheme_parameter) {
     geometryPtr = &geometry;
     pmlyPtr = &pmly;
     pmlzPtr = &pmlz;
-    sourcePtr = &source;
     gridPtr = &grid;
+
+    const int num1 = static_cast<int>(grid.get_numy());
+    const int num2 = static_cast<int>(grid.get_numz());
+    internal_field.resize(extents[num1][num2]);
 }
-
-void Solver::run() {
-    auto xgrid = gridPtr->get_xgrid();
-    auto ygrid = gridPtr->get_ygrid();
-    auto zgrid = gridPtr->get_zgrid();
-    auto xgrid_m = RectangularGrid::vector_to_multi_array(xgrid);
-    auto ygrid_m = RectangularGrid::vector_to_multi_array(ygrid);
-    auto zgrid_m = RectangularGrid::vector_to_multi_array(zgrid);
-
-    int numx = static_cast<int>(gridPtr->get_numx());
-    int numy = static_cast<int>(gridPtr->get_numy());
-    int numz = static_cast<int>(gridPtr->get_numz());
-
-
-    dump_index_slice("index_yz_start.h5", 'x', 0.0);
-    dump_index_slice("index_yz_end.h5", 'x', xgrid.back());
-    dump_index_slice("index_xz.h5", 'y', 0.0);
-    dump_index_slice("index_xy.h5", 'z', 0.0);
-
-    //define field in current slice to be "field". Since it is a scalar BPM there is no polarization.
-    multi_array<std::complex<double>, 2> field = sourcePtr->get_initial_profile(ygrid, zgrid, 0.0, 0.0, 1.0, 1.0);
-
-    write_cmplx_hdf5("field_yz_start.h5", field, ygrid_m, zgrid_m, 'x');
-
-    multi_array<std::complex<double>, 2> field_slice_xz(extents[numx][numz]);
-    multi_array<std::complex<double>, 2> field_slice_xy(extents[numx][numy]);
-    record_slice(field, field_slice_xz, 0, true);
-    record_slice(field, field_slice_xy, 0, false);
-
-
-    const int index_1percent = numx / 100;
-    const int index_10percent = numx / 10;
-    const int index_50percent = numx / 2;
-
-    const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-    for (int x_step = 1; x_step < numx; x_step++) {
-        const double current_x = xgrid[x_step - 1];
-        field = do_step_cn(field, current_x, gridPtr->get_dx());
-        record_slice(field, field_slice_xz, x_step, true);
-        record_slice(field, field_slice_xy, x_step, false);
-        //printing rough indication of simulation progress
-        if (x_step == index_1percent) {
-            std::cout << "1% reached" << std::endl;
-            auto end = std::chrono::steady_clock::now();
-            auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-            std::cout << "Elapsed time = " << delta << " (s), expected total run time = " << delta * 100 << " (s)" <<
-                    std::endl;
-        }
-        if (x_step == index_10percent) {
-            std::cout << "10% reached" << std::endl;
-            auto end = std::chrono::steady_clock::now();
-            auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-            std::cout << "Elapsed time = " << delta << " (s), expected total run time = " << delta * 10 << " (s)" <<
-                    std::endl;
-        }
-        if (x_step == index_50percent) {
-            std::cout << "50% reached" << std::endl;
-            auto end = std::chrono::steady_clock::now();
-            auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-            std::cout << "Elapsed time = " << delta << " (s), expected total run time = " << delta * 2 << " (s)" <<
-                    std::endl;
-        }
-    }
-    std::cout << "Engine run completed" << std::endl;
-    auto end = std::chrono::steady_clock::now();
-    auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-    std::cout << "Elapsed time = " << delta << " (s)" << std::endl;
-
-    write_cmplx_hdf5("field_yz_end.h5", field, ygrid_m, zgrid_m, 'x');
-    write_cmplx_hdf5("field_xy.h5", field_slice_xy, xgrid_m, ygrid_m, 'z');
-    write_cmplx_hdf5("field_xz.h5", field_slice_xz, xgrid_m, zgrid_m, 'y');
-}
-
-void Solver::record_slice(const multi_array<std::complex<double>, 2> &buffer,
-                          multi_array<std::complex<double>, 2> &storage, const int idx, const bool slice_y) const {
-    int numy = static_cast<int>(gridPtr->get_numy());
-    int numz = static_cast<int>(gridPtr->get_numz());
-
-    if (slice_y) {
-        const int index_ymid = numy / 2; //xz slice at y=0 approximately
-        for (int idz = 0; idz < numz; idz++) {
-            storage[idx][idz] = buffer[index_ymid][idz];
-        }
-    } else {
-        const int index_zmid = numz / 2; //yx slice at z=0 approximately
-        for (int idy = 0; idy < numy; idy++) {
-            storage[idx][idy] = buffer[idy][index_zmid];
-        }
-    }
-}
-
-void Solver::dump_index_slice(const std::string &filename, const char direction, const double slice_position) const {
-    assert(("Slice direction not recognized, use x or y or z", direction=='x' || direction=='y'|| direction=='z'));
-
-    std::vector<double> grid_coordinate1;
-    std::vector<double> grid_coordinate2;
-    std::string label1 = "grid1";
-    std::string label2 = "grid2";
-    if (direction == 'x') {
-        label1 = "ygrid";
-        label2 = "zgrid";
-        grid_coordinate1 = gridPtr->get_ygrid();
-        grid_coordinate2 = gridPtr->get_zgrid();
-    } else if (direction == 'y') {
-        label1 = "xgrid";
-        label2 = "zgrid";
-        grid_coordinate1 = gridPtr->get_xgrid();
-        grid_coordinate2 = gridPtr->get_zgrid();
-    } else {
-        label1 = "xgrid";
-        label2 = "ygrid";
-        grid_coordinate1 = gridPtr->get_xgrid();
-        grid_coordinate2 = gridPtr->get_ygrid();
-    }
-
-    const int num1 = static_cast<int>(grid_coordinate1.size());
-    const int num2 = static_cast<int>(grid_coordinate2.size());
-    multi_array<double, 2> index_dataset(extents[num1][num2]);
-    for (int index1 = 0; index1 < num1; index1++) {
-        for (int index2 = 0; index2 < num2; index2++) {
-            if (direction == 'x') {
-                index_dataset[index1][index2] = geometryPtr->get_index(slice_position, grid_coordinate1[index1],
-                                                                       grid_coordinate2[index2]);
-            } else if (direction == 'y') {
-                index_dataset[index1][index2] = geometryPtr->get_index(grid_coordinate1[index1], slice_position,
-                                                                       grid_coordinate2[index2]);
-            } else {
-                index_dataset[index1][index2] = geometryPtr->get_index(grid_coordinate1[index1],
-                                                                       grid_coordinate2[index2],
-                                                                       slice_position);
-            }
-        }
-    }
-
-    const auto grid1 = RectangularGrid::vector_to_multi_array(grid_coordinate1);
-    const auto grid2 = RectangularGrid::vector_to_multi_array(grid_coordinate2);
-    H5::H5File file(filename, H5F_ACC_TRUNC);
-    write_hdf5(file, "refractive_index", index_dataset);
-    write_hdf5(file, label1, grid1);
-    write_hdf5(file, label2, grid2);
-    file.close();
-}
-
 
 // todo: error prone to skip over boundary points. off by one in the array indexing can easily occur.
 // suggested solution: include the boundary points in the matrix, but overrule that row, and rhs entry to force the solution to zero on the edges.
 // todo: also, a lot of code duplication here in do_step_cn, and get_rhs. Generalize, then clean up.
 multi_array<std::complex<double>, 2> Solver::do_step_cn(const multi_array<std::complex<double>, 2> &field,
-                                                        const double x, const double dx) const {
+                                                        const double x, const double dx,
+                                                        const std::complex<double> propagation_factor) const {
     auto ygrid = gridPtr->get_ygrid();
     auto zgrid = gridPtr->get_zgrid();
     int numy = static_cast<int>(ygrid.size());
@@ -194,15 +50,14 @@ multi_array<std::complex<double>, 2> Solver::do_step_cn(const multi_array<std::c
         }
     }
     // prefactor is p=(alpha-1)*dx*i/(2k0*n0).
-    const std::complex<double> preFactorRHS =
-            (scheme_parameter - 1.0) * dx / (2.0 * k0 * reference_index) * std::complex<double>{0.0, 1.0};
+    const std::complex<double> preFactorRHS = (scheme_parameter - 1.0) * propagation_factor;
 
     //get RHS vector, store as multi-array.
     auto rhs = OperatorSuite::get_rhs(field, ygrid, zgrid, index_slice, reference_index, k0, preFactorRHS, pmlyPtr,
                                       pmlzPtr);
 
 
-    const auto preFactorLHS = scheme_parameter * dx / (2.0 * k0 * reference_index) * std::complex<double>{0.0, 1.0};
+    const auto preFactorLHS = scheme_parameter * propagation_factor;
 
     //solver for half step field
     multi_array<std::complex<double>, 2> half_step(extents[numy][numz]);
@@ -300,4 +155,21 @@ multi_array<double, 2> Solver::get_intensity(const multi_array<std::complex<doub
         }
     }
     return intensity;
+}
+
+multi_array<std::complex<double>, 2> Solver::interpolate_field(const std::vector<double> &ygrid_new,
+                                                               const std::vector<double> &zgrid_new) const {
+    const GridInterpolator grid_interpolator(gridPtr->get_ygrid(), gridPtr->get_zgrid(), internal_field,
+                                             std::complex{0.0, 0.0});
+    const int num1 = static_cast<int>(ygrid_new.size());
+    const int num2 = static_cast<int>(zgrid_new.size());
+    multi_array<std::complex<double>, 2> new_field(extents[num1][num2]);
+
+    for (auto i = 0; i < ygrid_new.size(); i++) {
+        for (auto j = 0; j < zgrid_new.size(); j++) {
+            new_field[i][j] = grid_interpolator.get_value(ygrid_new[i], zgrid_new[j]);
+        }
+    }
+
+    return new_field;
 }

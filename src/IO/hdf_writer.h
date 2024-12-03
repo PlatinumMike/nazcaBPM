@@ -79,7 +79,7 @@ void write_hdf5(H5::H5File file, const std::string& data_set_name, const boost::
 
 inline void write_cmplx_hdf5(const std::string &filename,
                              const boost::multi_array<std::complex<double>, 2> &data, const multi_array<double,1>& grid1,
-                             const multi_array<double,1>& grid2, const char direction) {
+                             const multi_array<double,1>& grid2, const std::string &label1, const std::string &label2) {
     const auto num1 = static_cast<int>(data.shape()[0]);
     const auto num2 = static_cast<int>(data.shape()[1]);
 
@@ -90,18 +90,6 @@ inline void write_cmplx_hdf5(const std::string &filename,
             data_real[i][j] = data[i][j].real();
             data_imag[i][j] = data[i][j].imag();
         }
-    }
-    std::string label1 = "grid1";
-    std::string label2 = "grid2";
-    if (direction == 'x') {
-        label1 = "ygrid";
-        label2 = "zgrid";
-    } else if (direction == 'y') {
-        label1 = "xgrid";
-        label2 = "zgrid";
-    } else {
-        label1 = "xgrid";
-        label2 = "ygrid";
     }
 
     H5::H5File file(filename, H5F_ACC_TRUNC);
