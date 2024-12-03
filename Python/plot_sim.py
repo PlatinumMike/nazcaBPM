@@ -60,7 +60,6 @@ plt.xlabel("y")
 plt.ylabel("z")
 plt.title("Re(u), x=0")
 plt.colorbar()
-plt.show()
 
 plt.figure()
 plt.contourf(field_yz_end["ygrid"], field_yz_end["zgrid"], field_yz_end["field"].real.T, 20)
@@ -68,7 +67,6 @@ plt.xlabel("y")
 plt.ylabel("z")
 plt.title(f"Re(u), x={xend}")
 plt.colorbar()
-plt.show()
 
 intensity_xz = np.abs(field_xz["field"]) ** 2
 intensity_xy = np.abs(field_xy["field"]) ** 2
@@ -79,7 +77,6 @@ plt.xlabel("x")
 plt.ylabel("z")
 plt.title("Intensity")
 plt.colorbar()
-plt.show()
 
 plt.figure()
 plt.contourf(field_xy["xgrid"], field_xy["ygrid"], intensity_xy.T, 20, cmap="inferno")
@@ -87,7 +84,6 @@ plt.xlabel("x")
 plt.ylabel("y")
 plt.title("Intensity")
 plt.colorbar()
-plt.show()
 
 
 plt.figure()
@@ -96,7 +92,6 @@ plt.xlabel("y")
 plt.ylabel("z")
 plt.title("Refractive index")
 plt.colorbar()
-plt.show()
 
 plt.figure()
 plt.contourf(index_yz_start["ygrid"], index_yz_start["zgrid"], index_yz_start["index"].T)
@@ -104,7 +99,6 @@ plt.xlabel("y")
 plt.ylabel("z")
 plt.title("Refractive index")
 plt.colorbar()
-plt.show()
 
 plt.figure()
 plt.contourf(index_xz["xgrid"], index_xz["zgrid"], index_xz["index"].T)
@@ -112,7 +106,6 @@ plt.xlabel("x")
 plt.ylabel("z")
 plt.title("Refractive index")
 plt.colorbar()
-plt.show()
 
 plt.figure()
 plt.contourf(index_xy["xgrid"], index_xy["ygrid"], index_xy["index"].T)
@@ -120,4 +113,14 @@ plt.xlabel("x")
 plt.ylabel("y")
 plt.title("Refractive index")
 plt.colorbar()
+
+# 3D intensity plot
+X, Y = np.meshgrid(field_xy["xgrid"], field_xy["ygrid"])
+
+fig = plt.figure()
+ax = fig.add_subplot(projection="3d")
+ax.plot_wireframe(X, Y, intensity_xy.T, rstride=0, cstride=10)
+ax.elev = 45
+ax.azim = -130
+
 plt.show()

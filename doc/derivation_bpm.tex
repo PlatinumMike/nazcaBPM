@@ -337,6 +337,8 @@
 	\end{equation}
 	For sufficiently large $x$ this should reach a steady state.
 	
+	When using PML boundary conditions the field appears to diverge. This is a known issue of the Im-Dis method \cite{Shibayama_Yamazaki_Yamauchi_Nakano_2005}. As workaround, we will use metal boundary conditions for the mode solve step, which should still obtain accurate results if the bounding box is sufficiently large. For the actual BPM simulation we can still use the normal PML boundary conditions.
+	
 	
 	% todo: explain story about ports and so on. Also, mention which options for ports I investigated, and why I settled on a specific one. Then mention that the grid is slightly different compared to the rest of the simulation, which is almost unavoidable if you want to keep it flexible.
 

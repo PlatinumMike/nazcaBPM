@@ -74,8 +74,10 @@ Parameters Readers::readJSON(const std::string &inputFileName) {
     //get max index
     inputs.max_index = get_max_index(inputs.shapes, inputs.background_index);
     // read in and output ports
-    inputs.input_ports = get_ports(root, "input_ports", inputs.xmin, inputs.xmax);
-    inputs.output_ports = get_ports(root, "output_ports", inputs.xmin, inputs.xmax);
+    inputs.input_ports = get_ports(root, "input_ports", inputs.xmin, inputs.xmax, inputs.ymin, inputs.ymax, inputs.zmin,
+                                   inputs.zmax);
+    inputs.output_ports = get_ports(root, "output_ports", inputs.xmin, inputs.xmax, inputs.ymin, inputs.ymax,
+                                    inputs.zmin, inputs.zmax);
 
     testParameters(inputs);
 
@@ -99,7 +101,7 @@ void Readers::testParameters(const Parameters &params) {
 }
 
 std::vector<Port> Readers::get_ports(boost::property_tree::ptree root, const std::string &portnames, const double xmin,
-                                     const double xmax) {
+                                     const double xmax, double ymin, double ymax, double zmin, double zmax) {
     std::vector<Port> portVec;
     auto ports = root.get_child(portnames);
     for (auto &port: ports) {
@@ -122,14 +124,24 @@ std::vector<Port> Readers::get_ports(boost::property_tree::ptree root, const std
                     << std::endl;
             exit(EXIT_FAILURE);
         }
-        double ymin = 0.5 * (y0 - yspan);
-        double ymax = 0.5 * (y0 + yspan);
-        double zmin = 0.5 * (z0 - zspan);
-        double zmax = 0.5 * (z0 + zspan);
-        int numy_port = static_cast<int>(yspan * resolution_y);
-        int numz_port = static_cast<int>(zspan * resolution_z);
-        auto ygrid = AuxiliaryFunctions::linspace(ymin, ymax, numy_port);
-        auto zgrid = AuxiliaryFunctions::linspace(zmin, zmax, numz_port);
+        double ymin_port = 0.5 * (y0 - yspan);
+        double ymax_port = 0.5 * (y0 + yspan);
+        double zmin_port = 0.5 * (z0 - zspan);
+        double zmax_port = 0.5 * (z0 + zspan);
+
+        //check if port grid does not extend beyond the total simulation grid
+        ymin_port = std::max(ymin_port, ymin);
+        ymax_port = std::min(ymax_port, ymax);
+        zmin_port = std::max(zmin_port, zmin);
+        zmax_port = std::min(zmax_port, zmax);
+        //recompute yspan, zspan in case those have changed.
+        const double yspan_port = ymax_port - ymin_port;
+        const double zspan_port = zmax_port - zmin_port;
+
+        int numy_port = static_cast<int>(yspan_port * resolution_y);
+        int numz_port = static_cast<int>(zspan_port * resolution_z);
+        auto ygrid = AuxiliaryFunctions::linspace(ymin_port, ymax_port, numy_port);
+        auto zgrid = AuxiliaryFunctions::linspace(zmin_port, zmax_port, numz_port);
         Port new_port(name, placement, x0, ygrid, zgrid);
         portVec.push_back(new_port);
     }

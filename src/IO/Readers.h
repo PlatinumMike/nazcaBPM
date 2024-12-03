@@ -23,7 +23,7 @@ private:
     static void testParameters(const Parameters &params);
 
     static std::vector<Port> get_ports(boost::property_tree::ptree root, const std::string& portnames, double xmin,
-                                       double xmax);
+                                       double xmax, double ymin, double ymax, double zmin, double zmax);
 
     static std::vector<Shape> get_shapes(boost::property_tree::ptree root);
 

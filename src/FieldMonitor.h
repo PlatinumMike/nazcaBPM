@@ -25,6 +25,17 @@
 
 class FieldMonitor {
 public:
+    /**
+     * Construct a field monitor
+     * @param coordinate1min minimal value of coordinate 1
+     * @param coordinate1max maximal value of coordinate 1
+     * @param coordinate2min minimal value of coordinate 2
+     * @param coordinate2max maximal value of coordinate 2
+     * @param orientation Orientation of normal vector, choose 'x', 'y' or 'z'. E.g. if you want to store the yz plane your normal is 'x'.
+     * @param slice_position Position of normal coordinate to slice at. Ignored when orientation is 'x'.
+     * @param resolution1 Number of gridpoints for coordinate 1
+     * @param resolution2 Number of gridpoints for coordinate 2
+     */
     FieldMonitor(double coordinate1min, double coordinate1max, double coordinate2min, double coordinate2max,
                  char orientation, double slice_position, int resolution1, int resolution2);
 
@@ -38,6 +49,13 @@ public:
                   const boost::multi_array<std::complex<double>, 2> &field_slice, int idx);
 
     void save_data(const std::string &filename) const;
+
+    /**
+     * Used to reset the state so that we can overwrite the field.
+     * It only sets populated=false, it does not actually zero the internal field.
+     * This is useful when writing in a loop as we can re-use the same FieldMonitor object.
+     */
+    void depopulate();
 
 private:
     const double coordinate1min;

@@ -83,14 +83,13 @@ void Engine::run() const {
     /*
      * Create a 'mini' Solver for each port, that is used to find the modes.
      */
-    //todo: mode solving is not always stable. It does not always converge. Also, a wider WG should have a larger neff, but that is not what the BPM finds...
-    // even if I use a straight waveguide it somehow does not find the same mode at the start and end... investigate further.
+    //todo: mode solving is not always stable.
     std::vector<ModeSolver> input_solvers;
     std::vector<ModeSolver> output_solvers;
     double increment_x = grid.get_dx();
     // input ports
     for (const auto &input_port: inputs.input_ports) {
-        //todo: some issue with the PMl inside of the mode solver, use metal walls for now, but check later on.
+        // Im-Dis method not stable in combination with PML. So just for the mode solver we will use metal walls.
         const PML pmly_input(inputs.pml_thickness, 0 * inputs.pml_strength, input_port.get_ymin(),
                              input_port.get_ymax());
         const PML pmlz_input(inputs.pml_thickness, 0 * inputs.pml_strength, input_port.get_zmin(),
@@ -98,7 +97,7 @@ void Engine::run() const {
 
 
         ModeSolver mode_solver(geometry, pmly_input, pmlz_input, input_port, inputs.scheme_parameter, inputs.k0,
-                               inputs.reference_index);
+                               inputs.reference_index, inputs.absolute_path_output, ERROR);
         mode_solver.run(increment_x);
 
         input_solvers.push_back(mode_solver);
@@ -112,7 +111,7 @@ void Engine::run() const {
 
 
         ModeSolver mode_solver(geometry, pmly_output, pmlz_output, output_port, inputs.scheme_parameter, inputs.k0,
-                               inputs.reference_index);
+                               inputs.reference_index, inputs.absolute_path_output, ERROR);
         mode_solver.run(increment_x);
 
         output_solvers.push_back(mode_solver);

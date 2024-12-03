@@ -3,6 +3,7 @@
 //
 
 #include "ModeSolver.h"
+#include "FieldMonitor.h"
 
 #include <iostream>
 #include <format>
@@ -11,10 +12,12 @@ using boost::extents;
 
 ModeSolver::ModeSolver(const Geometry &geometry, const PML &pmly, const PML &pmlz,
                        const Port &port, const double scheme_parameter, const double k0,
-                       const double reference_index): Solver(
-                                                          geometry, pmly, pmlz, port,
-                                                          scheme_parameter, k0, reference_index),
-                                                      port(port) {
+                       const double reference_index, const std::filesystem::path &absolute_path_output,
+                       const logging_level level): Solver(
+                                                       geometry, pmly, pmlz, port,
+                                                       scheme_parameter, k0, reference_index),
+                                                   port(port), absolute_path_output(absolute_path_output),
+                                                   level(level) {
     beta = 0.0;
     neff = 0.0;
 }
@@ -25,11 +28,25 @@ void ModeSolver::run(const double increment_x, const int max_iterations) {
 
     std::cout << std::format("Mode solving for port {} now...", port.get_name()) << std::endl;
 
+    std::filesystem::path output_path = absolute_path_output;
+
     // slight offset so it excites also odd modes, this can be used to find the higher order modes
-    constexpr double eps_y = 0.5;
-    constexpr double eps_z = 0.3;
+    // disabled for now, we care only about the fundamental mode for now.
+    constexpr double eps_y = 0.0;
+    constexpr double eps_z = 0.0;
     //define field in current slice to be "field". Since it is a scalar BPM there is no polarization.
     internal_field = get_initial_profile(ygrid, zgrid, port.get_y0() + eps_y, port.get_z0() + eps_z, 1.0, 1.0);
+
+    // write debug data
+    FieldMonitor monitor(gridPtr->get_ymin(), gridPtr->get_ymax(), gridPtr->get_zmin(), gridPtr->get_zmax(), 'x',
+                         0.0,
+                         static_cast<int>(gridPtr->get_numy()), static_cast<int>(gridPtr->get_numz()));
+    if (level > WARNING) {
+        monitor.populate(ygrid, zgrid, internal_field, 0);
+        output_path.append(std::format("monitor_{}_yz_0.h5", port.get_name()));
+        monitor.save_data(output_path.string());
+        monitor.depopulate();
+    }
 
     double beta_old = beta;
     bool mode_found = false;
@@ -54,6 +71,14 @@ void ModeSolver::run(const double increment_x, const int max_iterations) {
         // Normalize fields to have power=1. In principle we can just do this once at the end,
         // but in order to avoid numerical over/underflows of the Im-Dis method (exponential growth/decay), we do it every iteration.
         normalize_field(internal_field);
+
+        //save debug data to disk
+        if (level > WARNING) {
+            monitor.populate(ygrid, zgrid, internal_field, 0);
+            output_path.replace_filename(std::format("monitor_{}_yz_{}.h5", port.get_name(), x_step + 1));
+            monitor.save_data(output_path.string());
+            monitor.depopulate();
+        }
 
         if (mode_found) {
             break;

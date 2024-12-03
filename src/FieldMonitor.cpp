@@ -92,3 +92,7 @@ void FieldMonitor::save_data(const std::string &filename) const {
     const auto grid2_m = RectangularGrid::vector_to_multi_array(grid2);
     write_cmplx_hdf5(filename, field, grid1_m, grid2_m, label1, label2);
 }
+
+void FieldMonitor::depopulate() {
+    populated = false;
+}
