@@ -108,7 +108,7 @@ double ModeSolver::get_field_log(const multi_array<std::complex<double>, 2> &fie
 }
 
 double ModeSolver::get_norm(const multi_array<std::complex<double>, 2> &field) const {
-    // the norm is simply the integral of |u|^2 over y,z.
+    // the norm is simply the square root of the integral of |u|^2 over y,z.
     // We approximate this as the sum of the grid values squared, times the surface are of a single cell.
     double norm = 0.0;
     for (auto i = 0; i < field.shape()[0]; i++) {
@@ -118,7 +118,7 @@ double ModeSolver::get_norm(const multi_array<std::complex<double>, 2> &field) c
         }
     }
     norm *= gridPtr->get_dy() * gridPtr->get_dz();
-    return norm;
+    return std::sqrt(norm);
 }
 
 multi_array<std::complex<double>, 2> ModeSolver::get_initial_profile(const std::vector<double> &ygrid,
@@ -164,8 +164,17 @@ void ModeSolver::normalize_field(multi_array<std::complex<double>, 2> &field) co
 double ModeSolver::get_mode_overlap(const multi_array<std::complex<double>, 2> &bpm_field) const {
     // Simplified formula for the case where we just have a single field component to work with.
     // this is justified for scalar and semi-vectorial BPM.
-    const double norm1 = get_norm(internal_field);
-    const double norm2 = get_norm(bpm_field);
+    /*
+     * Note: ONLY the mode fields should be normalized, not the incoming (BPM) field!
+     * The BPM field was already normalized at the start, since it comes from a mode source.
+     * Any amplification/disspation is factored in by the simulation. If you'd normalize again you throw out this information.
+     * For example, consider a straight waveguide with some roughness. Due to this imperfection we lose some power due to scattering.
+     * So the bpm_field at the end equals the mode field, minus some loss in amplitude due to scattering.
+     * By normalizatin it again you reset the amplitude back to 1 and get 100% transmission.
+     * Of course this is not correct, hence we should not normalize the field again.
+     *
+     * Also, we assume that the internal_field is already normalized, so no need to compute the norm again here.
+     */
     std::complex<double> cross_term = {0, 0};
     for (auto i = 0; i < internal_field.shape()[0]; i++) {
         for (auto j = 0; j < internal_field.shape()[1]; j++) {
@@ -173,8 +182,8 @@ double ModeSolver::get_mode_overlap(const multi_array<std::complex<double>, 2> &
         }
     }
     cross_term *= gridPtr->get_dy() * gridPtr->get_dz();
-    const double numerator = cross_term.real() * cross_term.real() + cross_term.imag() * cross_term.imag();
-    return numerator / (norm1 * norm2);
+    const double overlap = cross_term.real() * cross_term.real() + cross_term.imag() * cross_term.imag();
+    return overlap;
 }
 
 double ModeSolver::compute_beta(const multi_array<std::complex<double>, 2> &old_field,
