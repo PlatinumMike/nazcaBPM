@@ -124,10 +124,10 @@ std::vector<Port> Readers::get_ports(boost::property_tree::ptree root, const std
                     << std::endl;
             exit(EXIT_FAILURE);
         }
-        double ymin_port = 0.5 * (y0 - yspan);
-        double ymax_port = 0.5 * (y0 + yspan);
-        double zmin_port = 0.5 * (z0 - zspan);
-        double zmax_port = 0.5 * (z0 + zspan);
+        double ymin_port = y0 - 0.5 * yspan;
+        double ymax_port = y0 + 0.5 * yspan;
+        double zmin_port = z0 - 0.5 * zspan;
+        double zmax_port = z0 + 0.5 * zspan;
 
         //check if port grid does not extend beyond the total simulation grid
         ymin_port = std::max(ymin_port, ymin);
