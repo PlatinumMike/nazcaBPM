@@ -14,27 +14,24 @@ ProgressBar::ProgressBar(const int max_steps) : max_steps(max_steps), checkpoint
 
 void ProgressBar::update(const int current_step) const {
     if (current_step == checkpoint_1percent) {
-        const auto end = std::chrono::steady_clock::now();
-        auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-        std::cout << std::format("1% reached, elapsed time = {} (s), expected total run time = {} (s).\n"
-                                 , delta, delta * 100);
+        print_progress(1.0);
     }
     if (current_step == checkpoint_10percent) {
-        const auto end = std::chrono::steady_clock::now();
-        auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-        std::cout << std::format("10% reached, elapsed time = {} (s), expected total run time = {} (s).\n"
-                                 , delta, delta * 10);
+        print_progress(10.0);
     }
     if (current_step == checkpoint_50percent) {
-        const auto end = std::chrono::steady_clock::now();
-        auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-        std::cout << std::format("50% reached, elapsed time = {} (s), expected total run time = {} (s).\n"
-                                 , delta, delta * 2);
+        print_progress(50.0);
     }
 }
 
 void ProgressBar::finalize() const {
+    print_progress(100.0);
+}
+
+void ProgressBar::print_progress(double percentage) const {
     const auto end = std::chrono::steady_clock::now();
-    auto delta = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-    std::cout << std::format("Run completed, elapsed time = {} (s).\n", delta);
+    auto delta = 1.0e-3 * static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).
+                     count());
+    std::cout << std::format("{0:d}% reached,\t elapsed time = {1:.3f} (s),\t expected total run time = {2:.3f} (s).\n",
+                             static_cast<int>(percentage), delta, delta * 100.0 / percentage);
 }
