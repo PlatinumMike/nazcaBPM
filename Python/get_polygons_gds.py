@@ -15,9 +15,11 @@ Note, this only seems to work for binary GDS2, not ascii data.
 
 import gdstk
 
+# TODO: layer number needs to be an integer, but what if we pass in a string or tuple?
+
 
 # Function to extract polygons from a GDS file
-def extract_polygons_from_gds(file_path):
+def extract_polygons_from_gds(file_path, layer_number: int):
     # Read the GDS file
     library = gdstk.read_gds(file_path)
     polygons = []
@@ -27,16 +29,18 @@ def extract_polygons_from_gds(file_path):
         # Iterate over all elements in the cell
         for element in cell.polygons:
             # Append the polygon coordinates to the list
-            polygons.append(element.points)
+            if element.layer == layer_number:
+                polygons.append(element.points)
 
     return polygons
 
 
-# Example usage
-gds_file = "example.gds"  # Replace with the path to your GDS file
-polygons = extract_polygons_from_gds(gds_file)
+if __name__ == "__main__":
+    # Example usage
+    gds_file = "example.gds"  # Replace with the path to your GDS file
+    polygons = extract_polygons_from_gds(gds_file, 1)
 
-# Print the extracted polygons
-print(f"Extracted {len(polygons)} polygons:")
-for i, polygon in enumerate(polygons, 1):
-    print(f"Polygon {i}: {polygon}")
+    # Print the extracted polygons
+    print(f"Extracted {len(polygons)} polygons:")
+    for i, polygon in enumerate(polygons, 1):
+        print(f"Polygon {i}: {polygon}")

@@ -50,14 +50,14 @@ void Engine::run() const {
 
     // Define index monitors.
     IndexMonitor monitor_x0(grid.get_ymin(), grid.get_ymax(), grid.get_zmin(), grid.get_zmax(), 'x',
-                            0.0,
+                            grid.get_xmin(),
                             inputs.numy, inputs.numz);
     monitor_x0.populate(geometry);
     index_path.append("index_yz_start.h5");
     monitor_x0.save_data(index_path.string());
 
     IndexMonitor monitor_x1(grid.get_ymin(), grid.get_ymax(), grid.get_zmin(), grid.get_zmax(), 'x',
-                            xgrid.back(),
+                            grid.get_xmax(),
                             inputs.numy, inputs.numz);
     monitor_x1.populate(geometry);
     index_path.replace_filename("index_yz_end.h5");
