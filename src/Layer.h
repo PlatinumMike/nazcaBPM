@@ -12,19 +12,16 @@
  */
 class Layer {
 public:
-    Layer(double zmin, double zmax, double index, bool isSubstrate);
+    Layer(double zmin, double zmax, double index);
 
     [[nodiscard]] bool is_in_layer(double z) const;
 
     [[nodiscard]] double get_index() const;
 
-    [[nodiscard]] bool is_substrate() const;
-
 private:
     const double index;
     const double zmin;
     const double zmax;
-    const bool isSubstrate;
 };
 
 

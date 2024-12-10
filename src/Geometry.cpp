@@ -16,10 +16,10 @@ double Geometry::get_index(const double x, const double y, const double z) const
     for (const auto &shape: std::ranges::views::reverse(m_shapes)) {
         if (shape.point_in_shape(x, y)) {
             const auto xs = xs_map.at(shape.get_xs_name());
-            return xs.get_index(z, true);
+            return xs.get_index(z);
         }
     }
 
     //list exhausted, point is in cladding or substrate.
-    return xs_map.at("default").get_index(z, false);
+    return xs_map.at("default").get_index(z);
 }

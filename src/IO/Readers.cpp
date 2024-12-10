@@ -69,7 +69,7 @@ Parameters Readers::readJSON(const std::string &inputFileName) {
 
 
     //read cross-sections
-    inputs.xs_map = get_xs_map();
+    inputs.xs_map = get_xs_map(root);
     //read shapes
     inputs.shapes = get_shapes(root);
     // read in and output ports
@@ -178,7 +178,25 @@ std::vector<Shape> Readers::get_shapes(boost::property_tree::ptree root) {
 
 
 std::unordered_map<std::string, XS> Readers::get_xs_map(boost::property_tree::ptree root) {
-    //todo: update input file to define the XS. Probably need to add a python class for this to handle it nicely.
-    // add InP and SiN examples.
-    // update rest of the code because I removed zmin, zmax from Shape...
+    std::unordered_map<std::string, XS> xs_map;
+    auto cross_sections = root.get_child("cross_sections");
+    for (auto &xs: cross_sections) {
+        auto actual_xs = xs.second; //get second element
+        const auto xs_name = actual_xs.get<std::string>("xs_name");
+        const auto background_index = actual_xs.get<double>("background_index");
+        auto list_reader = actual_xs.get_child("layer_list");
+
+        XS new_xs(background_index);
+
+        for (auto &layer: list_reader) {
+            auto actual_layer = layer.second;
+            const auto index = actual_layer.get<double>("index");
+            const auto zmin = actual_layer.get<double>("zmin");
+            const auto zmax = actual_layer.get<double>("zmax");
+            const Layer new_layer(zmin, zmax, index);
+            new_xs.append_layer(new_layer);
+        }
+        xs_map.insert({xs_name, new_xs});
+    }
+    return xs_map;
 }

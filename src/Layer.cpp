@@ -4,8 +4,8 @@
 
 #include "Layer.h"
 
-Layer::Layer(const double zmin, const double zmax, const double index, const bool isSubstrate) : index(index),
-    zmin(zmin), zmax(zmax), isSubstrate(isSubstrate) {
+Layer::Layer(const double zmin, const double zmax, const double index) : index(index),
+                                                                         zmin(zmin), zmax(zmax) {
 }
 
 bool Layer::is_in_layer(const double z) const {
@@ -14,8 +14,4 @@ bool Layer::is_in_layer(const double z) const {
 
 double Layer::get_index() const {
     return index;
-}
-
-bool Layer::is_substrate() const {
-    return isSubstrate;
 }

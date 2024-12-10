@@ -27,7 +27,7 @@ private:
 
     static std::vector<Shape> get_shapes(boost::property_tree::ptree root);
 
-    std::unordered_map<std::string, XS> get_xs_map();
+    static std::unordered_map<std::string, XS> get_xs_map(boost::property_tree::ptree root);
 };
 
 
