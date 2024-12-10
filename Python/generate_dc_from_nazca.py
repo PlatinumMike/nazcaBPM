@@ -16,6 +16,7 @@ from nazca.demofab import deep as ic
 from get_polygons_gds import extract_polygons_from_gds
 import os
 import json
+from xs_information import sin_strip
 
 
 def get_dc(
@@ -85,8 +86,6 @@ working_dir = os.path.join(root, "simulations")
 
 # other inputs
 height = 0.350
-zmin = -height / 2
-zmax = height / 2
 
 resx = 10
 resy = 30
@@ -94,14 +93,12 @@ resz = resy
 
 shapes = []
 for i, polygon in enumerate(polygons):
-    shape = {
-        "cell_name": f"cell{i}",
-        "zmin": zmin,
-        "zmax": zmax,
-        "refractive_index": 2.0,
-        "poly": polygon.tolist(),
-    }
+    shape = {"cell_name": f"cell{i}", "poly": polygon.tolist(), "xs_name": "sin-strip"}
     shapes.append(shape)
+
+xs_core, xs_default = sin_strip(height=height)
+
+cross_sections = [xs_core.xs2str(), xs_default.xs2str()]
 
 
 inports = get_port_list(
@@ -132,7 +129,6 @@ buffer = 1.0
 
 # convert to python dict
 dataDict = {
-    "background_index": 1.5,
     "reference_index": 1.65,
     "wl": 1.55,
     "resolution_x": resx,
@@ -152,6 +148,7 @@ dataDict = {
     "input_ports": inports,
     "output_ports": outports,
     "absolute_path_output": working_dir,
+    "cross_sections": cross_sections,
 }
 
 # convert to JSON

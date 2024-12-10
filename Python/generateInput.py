@@ -4,6 +4,7 @@ Generate input for BPM model.
 
 import os
 import json
+from xs_information import sin_strip
 
 # user inputs:
 jsonFileName = "./inputs.json"
@@ -19,8 +20,6 @@ width1 = 1.000
 width2 = 3.000
 height = 0.350
 taper_length = 10
-zmin = -height / 2
-zmax = height / 2
 
 resx = 10
 resy = 30
@@ -30,9 +29,6 @@ resz = resy
 # Adding extra bit of straight waveguide, otherwise the polygon ends right on the domain border, which means there is a jump in index at the start.
 taper = {
     "cell_name": "taper",
-    "zmin": zmin,
-    "zmax": zmax,
-    "refractive_index": 2.0,
     "poly": [
         (-0.1, -width1 / 2),
         (10, -width1 / 2),
@@ -43,21 +39,24 @@ taper = {
         (10, width1 / 2),
         (-0.1, width1 / 2),
     ],
+    "xs_name": "sin-strip",
 }
 # adding a straight waveguide
 strt = {
     "cell_name": "strt",
-    "zmin": zmin,
-    "zmax": zmax,
-    "refractive_index": 2.0,
     "poly": [
         (20 + taper_length, -width2 / 2),
         (30.1 + taper_length, -width2 / 2),
         (30.1 + taper_length, width2 / 2),
         (20 + taper_length, width2 / 2),
     ],
+    "xs_name": "sin-strip",
 }
 shapes = [taper, strt]
+
+xs_core, xs_default = sin_strip(height=height)
+
+cross_sections = [xs_core.xs2str(), xs_default.xs2str()]
 
 # ports have their own grid, and thus their own resolution.
 # no point in using a higher resolution than that of the main simulation because the field is interpolated on the BPM simulation grid anyway.
@@ -88,7 +87,6 @@ outports = [port_b0]
 
 # convert to python dict
 dataDict = {
-    "background_index": 1.5,
     "reference_index": 1.65,
     "wl": 1.5,
     "resolution_x": resx,
@@ -108,6 +106,7 @@ dataDict = {
     "input_ports": inports,
     "output_ports": outports,
     "absolute_path_output": working_dir,
+    "cross_sections": cross_sections,
 }
 
 # convert to JSON
