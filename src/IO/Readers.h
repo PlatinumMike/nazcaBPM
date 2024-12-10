@@ -27,7 +27,7 @@ private:
 
     static std::vector<Shape> get_shapes(boost::property_tree::ptree root);
 
-    static double get_max_index(const std::vector<Shape>& shapes, double background_index);
+    std::unordered_map<std::string, XS> get_xs_map();
 };
 
 

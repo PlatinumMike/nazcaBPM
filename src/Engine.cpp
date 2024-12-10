@@ -42,7 +42,7 @@ void Engine::run() const {
     const RectangularGrid3D grid(xgrid, ygrid, zgrid);
 
     // define geometry
-    const Geometry geometry(inputs.shapes, inputs.background_index);
+    const Geometry geometry(inputs.shapes, inputs.xs_map);
     // set perfectly matched layers
     const PML pmly(inputs.pml_thickness, inputs.pml_strength, grid.get_ymin(), grid.get_ymax());
     //adds a PML on both sides

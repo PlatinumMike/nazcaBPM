@@ -10,8 +10,6 @@
 #include "Port.h"
 
 struct Parameters {
-    double background_index; //background refractive index
-    double max_index; //maximum refractive index in the entire domain
     double wl; //vacuum wavelength (um)
     int resolution_x; //number of gridpoints per unit length in x direction
     int resolution_y; //number of gridpoints per unit length in y direction
@@ -51,6 +49,8 @@ struct Parameters {
     std::vector<Shape> shapes;
     std::vector<Port> input_ports;
     std::vector<Port> output_ports;
+
+    std::unordered_map<std::string, XS> xs_map;
 
     //todo: add method to print all of the loaded values inside of the code, so a user can confirm they are loaded correctly.
 };
