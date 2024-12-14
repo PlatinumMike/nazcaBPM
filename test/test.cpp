@@ -80,21 +80,65 @@ TEST_CASE("Linspace test") {
     CHECK(my_range.back() == 26.0);
 }
 
+TEST_CASE("Layers") {
+    Layer layer(-0.1, 2.8, 1.99);
+    CHECK(layer.get_index() == 1.99);
+    CHECK(layer.is_in_layer(0.0));
+    CHECK(layer.is_in_layer(2.8));
+    CHECK(!layer.is_in_layer(-1.0));
+}
+
+TEST_CASE("Cross-section") {
+    constexpr double background_index = 1.45;
+    XS xs(background_index);
+    // no layers added yet, so it has to return the background index
+    CHECK(xs.get_index(0.0)==background_index);
+    CHECK(xs.get_index(1.0)==background_index);
+    Layer layer1(0.0, 2.8, 1.99);
+    Layer layer2(2.8, 4.0, 1.85);
+    Layer layer3(4.0, 5.6, 1.22);
+    xs.append_layer(layer1);
+    xs.append_layer(layer2);
+    xs.append_layer(layer3);
+    CHECK(xs.get_index(-1.0)==background_index);
+    CHECK(xs.get_index(0.0)==layer1.get_index());
+    CHECK(xs.get_index(1.0)==layer1.get_index());
+    CHECK(xs.get_index(2.8)==layer1.get_index());
+    CHECK(xs.get_index(3.2)==layer2.get_index());
+    CHECK(xs.get_index(4.1)==layer3.get_index());
+    CHECK(xs.get_index(10.0)==background_index);
+}
+
 TEST_CASE("Check geometry class") {
     // we have a few overlapping material blocks here.
     constexpr double back_index = 1.4;
     constexpr double index1 = 2.0;
     constexpr double index2 = 1.7;
     constexpr double index3 = 2.4;
-    const Polygon polygon1({Point(-1.0, 0.0), Point(0.3, 0.0), Point(0.3, 1.0), Point(0.0, 1.0)});
-    const Polygon polygon2({Point(0.3, 0.0), Point(0.75, 0.0), Point(0.75, 0.65), Point(0.3, 0.65)});
-    const Polygon polygon3({Point(-0.2, -0.4), Point(0.5, -0.4), Point(0.5, 0.4), Point(-0.2, 0.4)});
+    // see "geometry_test.gds" for these shapes
+    const std::vector<Point> points1 = {{-1.0, 0.0}, {0.3, 0.0}, {0.3, 1.0}, {0.0, 1.0}};
+    const std::vector<Point> points2 = {{0.3, 0.0}, {0.75, 0.0}, {0.75, 0.65}, {0.3, 0.65}};
+    const std::vector<Point> points3 = {{-0.2, -0.4}, {0.5, -0.4}, {0.5, 0.4}, {-0.2, 0.4}};
 
-    const Shape shape1(polygon1, -0.5, 0.5, index1);
-    const Shape shape2(polygon2, -0.4, 1.1, index2);
-    const Shape shape3(polygon3, -1.0, 1.0, index3);
+    // we give each polygon it's own distinct XS with just one layer
+    Layer layer1(-0.5, 0.5, index1);
+    Layer layer2(-0.4, 1.1, index2);
+    Layer layer3(-1.0, 1.0, index3);
+    XS xs1(back_index);
+    xs1.append_layer(layer1);
+    XS xs2(back_index);
+    xs2.append_layer(layer2);
+    XS xs3(back_index);
+    xs3.append_layer(layer3);
+    XS xs_default(back_index);
+    std::unordered_map<std::string, XS> xs_map = {{"xs1", xs1}, {"xs2", xs2}, {"xs3", xs3}, {"default", xs_default}};
+
+
+    const Shape shape1(points1, "xs1");
+    const Shape shape2(points2, "xs2");
+    const Shape shape3(points3, "xs3");
     const std::vector shapes = {shape1, shape2, shape3};
-    Geometry geometry(shapes, back_index);
+    Geometry geometry(shapes, xs_map);
 
     CHECK(geometry.get_index(-2.0,0,0)==back_index); //outside of all shapes
     CHECK(geometry.get_index(0,0,0)==index3); //should be in the third shape
@@ -105,7 +149,7 @@ TEST_CASE("Check geometry class") {
     CHECK(geometry.get_index(0,0.16,0)==index3);
     CHECK(geometry.get_index(0.37,0.2,0)==index3);
     CHECK(geometry.get_index(0.37,0.2,1.4)==back_index);
-    CHECK(geometry.get_index(0.37,0.2,1.05)==index2);
+    CHECK(geometry.get_index(0.37,0.2,1.05)==back_index);
 }
 
 TEST_CASE("Check grid interpolation") {

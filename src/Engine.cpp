@@ -24,10 +24,10 @@ Engine::Engine(const std::string &inputFileName) {
     _inputs = Readers::readJSON(inputFileName);
     std::cout << "Simulation data to be stored in " << _inputs.absolute_path_output.string() << std::endl;
 
-    std::cout << std::format("Lx = {}, Ly = {}, Lz = {}\n",
-                             _inputs.domain_len_x, _inputs.domain_len_y, _inputs.domain_len_z);
-    std::cout << std::format("Nx = {}, Ny = {}, Nz = {}\n", _inputs.numx, _inputs.numy, _inputs.numz);
-    std::cout << std::format("dx = {}, dy = {}, dz = {}\n", _inputs.dx, _inputs.dy, _inputs.dz);
+    std::cout << std::format("Lx = {}, Ly = {}, Lz = {}",
+                             _inputs.domain_len_x, _inputs.domain_len_y, _inputs.domain_len_z) << std::endl;
+    std::cout << std::format("Nx = {}, Ny = {}, Nz = {}", _inputs.numx, _inputs.numy, _inputs.numz) << std::endl;
+    std::cout << std::format("dx = {}, dy = {}, dz = {}", _inputs.dx, _inputs.dy, _inputs.dz) << std::endl;
 }
 
 void Engine::run() const {
@@ -42,7 +42,7 @@ void Engine::run() const {
     const RectangularGrid3D grid(xgrid, ygrid, zgrid);
 
     // define geometry
-    const Geometry geometry(inputs.shapes, inputs.background_index);
+    const Geometry geometry(inputs.shapes, inputs.xs_map);
     // set perfectly matched layers
     const PML pmly(inputs.pml_thickness, inputs.pml_strength, grid.get_ymin(), grid.get_ymax());
     //adds a PML on both sides
@@ -50,14 +50,14 @@ void Engine::run() const {
 
     // Define index monitors.
     IndexMonitor monitor_x0(grid.get_ymin(), grid.get_ymax(), grid.get_zmin(), grid.get_zmax(), 'x',
-                            0.0,
+                            grid.get_xmin(),
                             inputs.numy, inputs.numz);
     monitor_x0.populate(geometry);
     index_path.append("index_yz_start.h5");
     monitor_x0.save_data(index_path.string());
 
     IndexMonitor monitor_x1(grid.get_ymin(), grid.get_ymax(), grid.get_zmin(), grid.get_zmax(), 'x',
-                            xgrid.back(),
+                            grid.get_xmax(),
                             inputs.numy, inputs.numz);
     monitor_x1.populate(geometry);
     index_path.replace_filename("index_yz_end.h5");

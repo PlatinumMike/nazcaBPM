@@ -47,7 +47,13 @@ add_executable(${EXENAME} src/main.cpp
         src/ProgressBar.cpp
         src/ProgressBar.h
         src/RectangularGrid3D.cpp
-        src/RectangularGrid3D.h)
+        src/RectangularGrid3D.h
+        src/Layer.cpp
+        src/Layer.h
+        src/XS.cpp
+        src/XS.h
+        src/Shape.cpp
+        src/Shape.h)
 
 target_link_libraries(${EXENAME} PRIVATE HDF5::HDF5)
 target_link_libraries(${EXENAME} PRIVATE Boost::boost)
@@ -61,6 +67,12 @@ if (ENABLE_TEST)
             src/PML.h
             src/OperatorSuite.cpp
             src/OperatorSuite.h
+            src/Layer.cpp
+            src/Layer.h
+            src/XS.cpp
+            src/XS.h
+            src/Shape.cpp
+            src/Shape.h
     )
 endif ()
 

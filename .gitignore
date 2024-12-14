@@ -10,3 +10,6 @@ doc/derivation_bpm.log
 doc/derivation_bpm.out
 doc/derivation_bpm.pdf
 doc/derivation_bpm.synctex.gz
+simulations/*.h5
+Python/__pycache__/*
+Python/*.gds

@@ -11,7 +11,6 @@
 #include <vector>
 #include <algorithm>
 
-#include <boost/multi_array.hpp>
 using boost::multi_array;
 using boost::extents;
 
@@ -39,21 +38,23 @@ multi_array<std::complex<double>, 2> Solver::do_step_cn(const multi_array<std::c
                                                         const std::complex<double> propagation_factor) const {
     auto ygrid = gridPtr->get_ygrid();
     auto zgrid = gridPtr->get_zgrid();
+    auto ygrid_bulk = std::vector(ygrid.begin() + 1, ygrid.end() - 1);
+    auto zgrid_bulk = std::vector(zgrid.begin() + 1, zgrid.end() - 1);
     int numy = static_cast<int>(ygrid.size());
     int numz = static_cast<int>(zgrid.size());
 
-    // get index in slice
-    multi_array<double, 2> index_slice(extents[numy][numz]);
-    for (int idy = 0; idy < numy; idy++) {
-        for (int idz = 0; idz < numz; idz++) {
-            index_slice[idy][idz] = geometryPtr->get_index(x, ygrid[idy], zgrid[idz]);
-        }
-    }
+
+    //cache index values
+    multi_array<double, 2> index_slice_start = geometryPtr->get_index_plane(x, ygrid, zgrid);
+    multi_array<double, 2> index_slice_mid = geometryPtr->get_index_plane(x + 0.5 * dx, ygrid, zgrid);
+    multi_array<double, 2> index_slice_end = geometryPtr->get_index_plane(x + dx, ygrid, zgrid);
+
     // prefactor is p=(alpha-1)*dx*i/(2k0*n0).
     const std::complex<double> preFactorRHS = (scheme_parameter - 1.0) * propagation_factor;
 
     //get RHS vector, store as multi-array.
-    auto rhs = OperatorSuite::get_rhs(field, ygrid, zgrid, index_slice, reference_index, k0, preFactorRHS, pmlyPtr,
+    auto rhs = OperatorSuite::get_rhs(field, ygrid, zgrid, index_slice_start, reference_index, k0, preFactorRHS,
+                                      pmlyPtr,
                                       pmlzPtr);
 
 
@@ -64,22 +65,21 @@ multi_array<std::complex<double>, 2> Solver::do_step_cn(const multi_array<std::c
     std::fill_n(half_step.data(), half_step.num_elements(), 0.0);
     //invert (1+...Gy) operator, so only coupling between neighbours in y direction, this means we have numz independent problems
     for (int idz = 1; idz < numz - 1; idz++) {
-        auto size = numy - 2;
-        std::vector<double> position_mid(size);
-        std::vector<double> position_back(size);
-        std::vector<double> position_forward(size);
-        std::vector<double> index_mid(size);
-        std::vector<double> index_back(size);
-        std::vector<double> index_forward(size);
-        std::vector<std::complex<double> > rhs_slice(size);
+        std::vector<double> position_mid(ygrid_bulk.size());
+        std::vector<double> position_back(ygrid_bulk.size());
+        std::vector<double> position_forward(ygrid_bulk.size());
+        std::vector<double> index_mid(ygrid_bulk.size());
+        std::vector<double> index_back(ygrid_bulk.size());
+        std::vector<double> index_forward(ygrid_bulk.size());
+        std::vector<std::complex<double> > rhs_slice(ygrid_bulk.size());
         //fill vectors
-        for (auto array_index = 0; array_index < size; array_index++) {
+        for (auto array_index = 0; array_index < ygrid_bulk.size(); array_index++) {
             position_mid[array_index] = ygrid[array_index + 1];
             position_back[array_index] = ygrid[array_index];
             position_forward[array_index] = ygrid[array_index + 2];
-            index_mid[array_index] = geometryPtr->get_index(x + 0.5 * dx, ygrid[array_index + 1], zgrid[idz]);
-            index_back[array_index] = geometryPtr->get_index(x + 0.5 * dx, ygrid[array_index], zgrid[idz]);
-            index_forward[array_index] = geometryPtr->get_index(x + 0.5 * dx, ygrid[array_index + 2], zgrid[idz]);
+            index_mid[array_index] = index_slice_mid[array_index + 1][idz];
+            index_back[array_index] = index_slice_mid[array_index][idz];
+            index_forward[array_index] = index_slice_mid[array_index + 2][idz];
 
             rhs_slice[array_index] = rhs[array_index + 1][idz];
         }
@@ -100,22 +100,21 @@ multi_array<std::complex<double>, 2> Solver::do_step_cn(const multi_array<std::c
     std::fill_n(full_step.data(), full_step.num_elements(), 0.0);
     //invert (1+...Gz) operator, so only coupling between neighbours in z direction, this means we have numy independent problems
     for (int idy = 1; idy < numy - 1; idy++) {
-        auto size = numz - 2;
-        std::vector<double> position_mid(size);
-        std::vector<double> position_back(size);
-        std::vector<double> position_forward(size);
-        std::vector<double> index_mid(size);
-        std::vector<double> index_back(size);
-        std::vector<double> index_forward(size);
-        std::vector<std::complex<double> > rhs_slice(size);
+        std::vector<double> position_mid(zgrid_bulk.size());
+        std::vector<double> position_back(zgrid_bulk.size());
+        std::vector<double> position_forward(zgrid_bulk.size());
+        std::vector<double> index_mid(zgrid_bulk.size());
+        std::vector<double> index_back(zgrid_bulk.size());
+        std::vector<double> index_forward(zgrid_bulk.size());
+        std::vector<std::complex<double> > rhs_slice(zgrid_bulk.size());
         //fill vectors
-        for (auto array_index = 0; array_index < size; array_index++) {
+        for (auto array_index = 0; array_index < zgrid_bulk.size(); array_index++) {
             position_mid[array_index] = zgrid[array_index + 1];
             position_back[array_index] = zgrid[array_index];
             position_forward[array_index] = zgrid[array_index + 2];
-            index_mid[array_index] = geometryPtr->get_index(x + dx, ygrid[idy], zgrid[array_index + 1]);
-            index_back[array_index] = geometryPtr->get_index(x + dx, ygrid[idy], zgrid[array_index]);
-            index_forward[array_index] = geometryPtr->get_index(x + dx, ygrid[idy], zgrid[array_index + 2]);
+            index_mid[array_index] = index_slice_end[idy][array_index + 1];
+            index_back[array_index] = index_slice_end[idy][array_index];
+            index_forward[array_index] = index_slice_end[idy][array_index + 2];
             //using the half_step now to fill the rhs vector.
             rhs_slice[array_index] = half_step[idy][array_index + 1];
         }

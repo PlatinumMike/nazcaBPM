@@ -27,7 +27,6 @@ Parameters Readers::readJSON(const std::string &inputFileName) {
     read_json(inputFileName, root);
 
     //todo: split up struct into multiple pieces, not all these variables need to be known in every class.
-    inputs.background_index = root.get<double>("background_index");
     inputs.reference_index = root.get<double>("reference_index");
     inputs.wl = root.get<double>("wl");
     inputs.resolution_x = root.get<int>("resolution_x");
@@ -69,10 +68,10 @@ Parameters Readers::readJSON(const std::string &inputFileName) {
     inputs.beta_ref = inputs.k0 * inputs.reference_index;
 
 
+    //read cross-sections
+    inputs.xs_map = get_xs_map(root);
     //read shapes
     inputs.shapes = get_shapes(root);
-    //get max index
-    inputs.max_index = get_max_index(inputs.shapes, inputs.background_index);
     // read in and output ports
     inputs.input_ports = get_ports(root, "input_ports", inputs.xmin, inputs.xmax, inputs.ymin, inputs.ymax, inputs.zmin,
                                    inputs.zmax);
@@ -86,8 +85,6 @@ Parameters Readers::readJSON(const std::string &inputFileName) {
 
 void Readers::testParameters(const Parameters &params) {
     //todo: asserts are ignored in release mode, find a way to enable them.
-    assert(params.background_index > 0);
-    assert(params.max_index >= params.background_index);
     assert(params.reference_index > 0);
     assert(params.wl > 0);
     assert(params.resolution_x > 0);
@@ -98,6 +95,8 @@ void Readers::testParameters(const Parameters &params) {
     assert(params.domain_len_z > 0);
     assert(params.pml_strength > 0);
     assert(params.pml_thickness > 0);
+    // the map needs to have a default cross-section in case the sampled point lies outside of a polygon in your GDS.
+    assert(params.xs_map.contains("default"));
 }
 
 std::vector<Port> Readers::get_ports(boost::property_tree::ptree root, const std::string &portnames, const double xmin,
@@ -124,10 +123,10 @@ std::vector<Port> Readers::get_ports(boost::property_tree::ptree root, const std
                     << std::endl;
             exit(EXIT_FAILURE);
         }
-        double ymin_port = 0.5 * (y0 - yspan);
-        double ymax_port = 0.5 * (y0 + yspan);
-        double zmin_port = 0.5 * (z0 - zspan);
-        double zmax_port = 0.5 * (z0 + zspan);
+        double ymin_port = y0 - 0.5 * yspan;
+        double ymax_port = y0 + 0.5 * yspan;
+        double zmin_port = z0 - 0.5 * zspan;
+        double zmax_port = z0 + 0.5 * zspan;
 
         //check if port grid does not extend beyond the total simulation grid
         ymin_port = std::max(ymin_port, ymin);
@@ -154,9 +153,7 @@ std::vector<Shape> Readers::get_shapes(boost::property_tree::ptree root) {
     auto shapes = root.get_child("shapes");
     for (auto &shape: shapes) {
         auto actual_shape = shape.second; //get second element
-        auto zmax = actual_shape.get<double>("zmax");
-        auto zmin = actual_shape.get<double>("zmin");
-        auto refractive_index = actual_shape.get<double>("refractive_index");
+        const auto xs_name = actual_shape.get<std::string>("xs_name");
         auto poly_reader = actual_shape.get_child("poly");
         std::vector<Point> points;
 
@@ -172,18 +169,34 @@ std::vector<Shape> Readers::get_shapes(boost::property_tree::ptree root) {
             }
             points.push_back({xposition, yposition});
         }
-        const Polygon poly(points);
 
-        Shape new_shape(poly, zmin, zmax, refractive_index);
+        Shape new_shape(points, xs_name);
         shapesVec.push_back(new_shape);
     }
     return shapesVec;
 }
 
-double Readers::get_max_index(const std::vector<Shape> &shapes, const double background_index) {
-    double max_index = background_index;
-    for (const auto &shape: shapes) {
-        max_index = std::max(max_index, shape.refractive_index);
+
+std::unordered_map<std::string, XS> Readers::get_xs_map(boost::property_tree::ptree root) {
+    std::unordered_map<std::string, XS> xs_map;
+    auto cross_sections = root.get_child("cross_sections");
+    for (auto &xs: cross_sections) {
+        auto actual_xs = xs.second; //get second element
+        const auto xs_name = actual_xs.get<std::string>("xs_name");
+        const auto background_index = actual_xs.get<double>("background_index");
+        auto list_reader = actual_xs.get_child("layer_list");
+
+        XS new_xs(background_index);
+
+        for (auto &layer: list_reader) {
+            auto actual_layer = layer.second;
+            const auto index = actual_layer.get<double>("index");
+            const auto zmin = actual_layer.get<double>("zmin");
+            const auto zmax = actual_layer.get<double>("zmax");
+            const Layer new_layer(zmin, zmax, index);
+            new_xs.append_layer(new_layer);
+        }
+        xs_map.insert({xs_name, new_xs});
     }
-    return max_index;
+    return xs_map;
 }

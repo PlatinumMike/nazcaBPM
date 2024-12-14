@@ -5,18 +5,12 @@
 #ifndef GEOMETRY_H
 #define GEOMETRY_H
 #include <vector>
-#include "Polygon.h"
+#include <string>
+#include <unordered_map>
 
-
-// shapes in nazca are described by their polygon, then extruded vertically. Also we will assume they have a uniform refractive index.
-// you could embed the extra z and index information into the polygon, but this is kept apart on purpose. This way the nazca information is kept separate.
-// the ray casting only needs to be done for the x,y coordinates, it does not need any other information.
-struct Shape {
-    Polygon poly;
-    double zmin = 0;
-    double zmax = 0;
-    double refractive_index = 1.0;
-};
+#include "Shape.h"
+#include "XS.h"
+#include <boost/multi_array.hpp>
 
 
 /**
@@ -24,19 +18,42 @@ struct Shape {
  */
 class Geometry {
 public:
-    Geometry(const std::vector<Shape> &shapes, double background_index);
+    Geometry(const std::vector<Shape> &shapes, const std::unordered_map<std::string, XS> &xs_map);
 
-    //loop over all shapes, find if the point is inside, and return the index.
-    double get_index(double x, double y, double z) const;
+    /**
+     * Get index value in a single point (x,y,z). If you need the index in a line or a plane, it is recommended to use
+     * the corresponding method for it as it is MUCH faster.
+     * @return index value
+     */
+    [[nodiscard]] double get_index(double x, double y, double z) const;
+
+    /**
+     * Get index along a line in the z dimension. This saves time compared to looping over get_index(),
+     * because it uses the same stack for all points in the array. If you need a slice, it is recommended to use the
+     * even faster get_index_plane() method.
+     * @param x x position
+     * @param y y position
+     * @param zgrid z positions
+     * @return index values
+     */
+    std::vector<double> get_index_line(double x, double y, const std::vector<double>& zgrid) const;
+
+    /**
+     * Get index in a plane with normal direction the x direction. This maximally re-uses cached information.
+     * So if you need a slice of the index, it is strongly recommended to use this method
+     * instead of looping over get_index().
+     * @param x x position
+     * @param ygrid y positions
+     * @param zgrid z positions
+     * @return index values
+     */
+    boost::multi_array<double, 2> get_index_plane(double x, const std::vector<double> &ygrid, const std::vector<double>& zgrid) const;
 
 private:
-    // todo: keep track of a temporary sub-list for each z slice for only the shapes that are present in that slice.
-    // this speeds up the searching.
     std::vector<Shape> m_shapes;
-    double m_background_index;
+    const std::unordered_map<std::string, XS> xs_map;
 
-    //this uses nazca coordinates
-    bool point_in_shape(double x, double y, double z, const Shape &shape) const;
+    XS get_xs(double x, double y) const;
 };
 
 

@@ -25,6 +25,8 @@ private:
     const int checkpoint_1percent;
     const int checkpoint_10percent;
     const int checkpoint_50percent;
+
+    void print_progress(double percentage) const;
 };
 
 
