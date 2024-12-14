@@ -24,10 +24,10 @@ Engine::Engine(const std::string &inputFileName) {
     _inputs = Readers::readJSON(inputFileName);
     std::cout << "Simulation data to be stored in " << _inputs.absolute_path_output.string() << std::endl;
 
-    std::cout << std::format("Lx = {}, Ly = {}, Lz = {}\n",
-                             _inputs.domain_len_x, _inputs.domain_len_y, _inputs.domain_len_z);
-    std::cout << std::format("Nx = {}, Ny = {}, Nz = {}\n", _inputs.numx, _inputs.numy, _inputs.numz);
-    std::cout << std::format("dx = {}, dy = {}, dz = {}\n", _inputs.dx, _inputs.dy, _inputs.dz);
+    std::cout << std::format("Lx = {}, Ly = {}, Lz = {}",
+                             _inputs.domain_len_x, _inputs.domain_len_y, _inputs.domain_len_z) << std::endl;
+    std::cout << std::format("Nx = {}, Ny = {}, Nz = {}", _inputs.numx, _inputs.numy, _inputs.numz) << std::endl;
+    std::cout << std::format("dx = {}, dy = {}, dz = {}", _inputs.dx, _inputs.dy, _inputs.dz) << std::endl;
 }
 
 void Engine::run() const {

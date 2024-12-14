@@ -32,6 +32,6 @@ void ProgressBar::print_progress(double percentage) const {
     const auto end = std::chrono::steady_clock::now();
     auto delta = 1.0e-3 * static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).
                      count());
-    std::cout << std::format("{0:d}% reached,\t elapsed time = {1:.3f} (s),\t expected total run time = {2:.3f} (s).\n",
-                             static_cast<int>(percentage), delta, delta * 100.0 / percentage);
+    std::cout << std::format("{0:d}% reached,\t elapsed time = {1:.3f} (s),\t expected total run time = {2:.3f} (s).",
+                             static_cast<int>(percentage), delta, delta * 100.0 / percentage) << std::endl;
 }
