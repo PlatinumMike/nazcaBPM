@@ -10,7 +10,7 @@
 
 class Port : public RectangularGrid {
 public:
-    Port(const std::string &name, const std::string &placement,
+    Port(std::string name, std::string placement,
          double x0, std::vector<double> const &ygrid, std::vector<double> const &zgrid);
 
     [[nodiscard]] std::string get_name() const;

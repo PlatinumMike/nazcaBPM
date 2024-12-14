@@ -4,8 +4,10 @@
 
 #include "Port.h"
 
-Port::Port(const std::string &name, const std::string &placement, const double x0, std::vector<double> const &ygrid,
-           std::vector<double> const &zgrid): RectangularGrid(ygrid, zgrid), name(name), x0(x0), placement(placement) {
+#include <utility>
+
+Port::Port(std::string name, std::string placement, const double x0, std::vector<double> const &ygrid,
+           std::vector<double> const &zgrid): RectangularGrid(ygrid, zgrid), name(std::move(name)), x0(x0), placement(std::move(placement)) {
 }
 
 std::string Port::get_name() const {
