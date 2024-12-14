@@ -55,21 +55,26 @@ void IndexMonitor::populate(const Geometry &geometryPtr) {
         return;
     }
 
-    for (auto index1 = 0; index1 < index_dataset.shape()[0]; index1++) {
-        for (auto index2 = 0; index2 < index_dataset.shape()[1]; index2++) {
-            if (orientation == 'x') {
-                index_dataset[index1][index2] = geometryPtr.get_index(slice_position, grid1[index1],
-                                                                      grid2[index2]);
-            } else if (orientation == 'y') {
-                index_dataset[index1][index2] = geometryPtr.get_index(grid1[index1], slice_position,
-                                                                      grid2[index2]);
-            } else {
+    if (orientation == 'x') {
+        index_dataset = geometryPtr.get_index_plane(slice_position, grid1, grid2);
+    } else if (orientation == 'y') {
+        // loop over x first, because it re-uses the same XS. That is faster.
+        for (auto index1 = 0; index1 < index_dataset.shape()[0]; index1++) {
+            std::vector<double> index_line = geometryPtr.get_index_line(grid1[index1], slice_position, grid2);
+            for (auto index2 = 0; index2 < index_dataset.shape()[1]; index2++) {
+                index_dataset[index1][index2] = index_line[index2];
+            }
+        }
+    } else {
+        for (auto index1 = 0; index1 < index_dataset.shape()[0]; index1++) {
+            for (auto index2 = 0; index2 < index_dataset.shape()[1]; index2++) {
                 index_dataset[index1][index2] = geometryPtr.get_index(grid1[index1],
                                                                       grid2[index2],
                                                                       slice_position);
             }
         }
     }
+
     populated = true;
 }
 
