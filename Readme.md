@@ -9,14 +9,31 @@ This can be tackled by using a conformal mapping, or changing to cylindrical coo
 # Prerequisites
 
 To compile this program you need:
-* C++ compiler
+* C++ compiler (that supports c++20)
 * cmake
 * make (or ninja)
-* HDF5 (On ubuntu this is easy, install `libhdf5-dev`)
+* HDF5 (On ubuntu this is easy, install `libhdf5-dev` with apt)
 * Boost (install `libboost-all-dev`)
 * python3 (optional)
 
-Alternatively the program can run in a docker container, see below.
+Alternatively the program can run in a docker container, see below. 
+
+## Conda
+Another alternative way to install it is inside a conda environment (Warning: not yet tested). First install Anaconda or miniconda, then create a new environment, e.g. named `bpm`:
+
+`conda create -n bpm`
+
+Activate it:
+
+`conda activate bpm`
+
+Install dependencies:
+
+`conda install -c conda-forge hdf5`
+
+`conda install -c conda-forge gxx`
+
+You can check with `which g++` to see if the compiler alias points towards your system's g++, or the one we just installed inside this environment. To compile the progam just continue the instructions in the next section. Conda forge has relatively fresh packages, so you're sure to have one of the latest compilers. This may be handy when your system's compiler is too old (need c++20).
 
 # Installation
 
