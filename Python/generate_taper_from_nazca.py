@@ -19,6 +19,7 @@ from get_polygons_gds import extract_polygons_from_gds
 import os
 import json
 from xs_information import sin_strip
+from input_generator import SettingsBPM, Port, Shape
 
 
 def get_taper(
@@ -62,34 +63,34 @@ resz = resy
 
 shapes = []
 for i, polygon in enumerate(polygons):
-    shape = {"cell_name": f"cell{i}", "poly": polygon.tolist(), "xs_name": "sin-strip"}
+    shape = Shape(cell_name=f"cell{i}", poly=polygon.tolist(), xs_name="sin-strip")
     shapes.append(shape)
 
 xs_core, xs_default = sin_strip(height=height)
 
-cross_sections = [xs_core.xs2str(), xs_default.xs2str()]
+cross_sections = [xs_core, xs_default]
 
 
-port_a0 = {
-    "name": "a0",
-    "placement": "left",
-    "yspan": width1 + 2,
-    "zspan": height + 2,
-    "y0": taper_cell.pin["a0"].y,
-    "z0": 0.0,
-    "port_resolution_y": resy,
-    "port_resolution_z": resz,
-}
-port_b0 = {
-    "name": "b0",
-    "placement": "right",
-    "yspan": width2 + 2,
-    "zspan": height + 2,
-    "y0": taper_cell.pin["b0"].y,
-    "z0": 0.0,
-    "port_resolution_y": resy,
-    "port_resolution_z": resz,
-}
+port_a0 = Port(
+    name="a0",
+    placement="left",
+    yspan=width1 + 2,
+    zspan=height + 2,
+    y0=taper_cell.pin["a0"].y,
+    z0=0.0,
+    port_resolution_y=resy,
+    port_resolution_z=resz,
+)
+port_b0 = Port(
+    name="b0",
+    placement="right",
+    yspan=width2 + 2,
+    zspan=height + 2,
+    y0=taper_cell.pin["b0"].y,
+    z0=0.0,
+    port_resolution_y=resy,
+    port_resolution_z=resz,
+)
 
 inports = [port_a0]
 outports = [port_b0]
@@ -97,29 +98,31 @@ outports = [port_b0]
 # move in the starting and ending boundaries a bit to ensure the structure extends all the way through the xmin, xmax
 buffer = 1.0
 
+settings = SettingsBPM(
+    reference_index=1.65,
+    wl=1.55,
+    resolution_x=resx,
+    resolution_y=resy,
+    resolution_z=resz,
+    xmin=taper_cell.pin["a0"].x + buffer,
+    xmax=taper_cell.pin["b0"].x - buffer,
+    ymin=-8.0,
+    ymax=8.0,
+    zmin=-4.0,
+    zmax=4.0,
+    shapes=shapes,
+    input_ports=inports,
+    output_ports=outports,
+    absolute_path_output=working_dir,
+    cross_sections=cross_sections,
+    pml_strength=5.0,
+    pml_thickness=1.0,
+    scheme_parameter=0.5,
+    dry_run=False,
+)
+
 # convert to python dict
-dataDict = {
-    "reference_index": 1.65,
-    "wl": 1.55,
-    "resolution_x": resx,
-    "resolution_y": resy,
-    "resolution_z": resz,
-    "xmin": taper_cell.pin["a0"].x + buffer,
-    "xmax": taper_cell.pin["b0"].x - buffer,
-    "ymin": -8.0,
-    "ymax": 8.0,
-    "zmin": -4.0,
-    "zmax": 4.0,
-    "pml_strength": 5.0,
-    "pml_thickness": 1.0,
-    "shapes": shapes,
-    "scheme_parameter": 0.5,
-    "dry_run": False,
-    "input_ports": inports,
-    "output_ports": outports,
-    "absolute_path_output": working_dir,
-    "cross_sections": cross_sections,
-}
+dataDict = settings.model_dump()
 
 # convert to JSON
 jsonDict = json.dumps(dataDict, indent=2, sort_keys=True)
