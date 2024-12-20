@@ -8,52 +8,21 @@ Cross section class
 @author: mike
 """
 from typing import List
-
-
-class Layer:
-    def __init__(
-        self,
-        name: str,
-        zmin: float,
-        zmax: float,
-        index: float,
-    ):
-        self.name = name
-        self.zmin = zmin
-        self.zmax = zmax
-        self.index = index
-
-    def layer2str(self):
-        return {"name": self.name, "zmin": self.zmin, "zmax": self.zmax, "index": self.index}
-
-
-class XS:
-    def __init__(self, name: str, layer_list: List[Layer], background_index: float = 1.0):
-        self.xs_name = name
-        self.layer_list = layer_list
-        self.background_index = background_index
-
-    def xs2str(self):
-        layer_list_str = [layer.layer2str() for layer in self.layer_list]
-        return {
-            "xs_name": self.xs_name,
-            "layer_list": layer_list_str,
-            "background_index": self.background_index,
-        }
+from input_generator import Layer, XS
 
 
 # some examples below. The "default" XS just a cross section with no core layers. This will be used in the simulation for points that lie outside of the polygons.
 def soi_strip(height: float = 0.220):
-    core = Layer("core", -height / 2, height / 2, 3.5)
-    xs_core = XS("soi-strip", [core], 1.5)
-    xs_default = XS("default", [], 1.5)
+    core = Layer(name="core", zmin=-height / 2, zmax=height / 2, index=3.5)
+    xs_core = XS(xs_name="soi-strip", layer_list=[core], background_index=1.5)
+    xs_default = XS(xs_name="default", layer_list=[], background_index=1.5)
     return xs_core, xs_default
 
 
 def sin_strip(height: float = 0.350):
-    core = Layer("core", -height / 2, height / 2, 2.0)
-    xs_core = XS("sin-strip", [core], 1.5)
-    xs_default = XS("default", [], 1.5)
+    core = Layer(name="core", zmin=-height / 2, zmax=height / 2, index=2.0)
+    xs_core = XS(xs_name="sin-strip", layer_list=[core], background_index=1.5)
+    xs_default = XS(xs_name="default", layer_list=[], background_index=1.5)
     return xs_core, xs_default
 
 
@@ -63,13 +32,28 @@ def InP_rib(height: float = 0.400, height_base: float = 1.0, height_top: float =
     index_clad = 3.16
     height_sub = 1.0e6  # just something very large so it extends through the entire bbox.
 
-    substrate = Layer("substrate", -height_sub, 0.0, index_clad)
+    substrate = Layer(name="substrate", zmin=-height_sub, zmax=0.0, index=index_clad)
     z0 = 0.0
-    nInp = Layer("nInp", z0, height_base, index_clad)
+    nInp = Layer(name="nInp", zmin=z0, zmax=height_base, index=index_clad)
     z0 += height_base
-    core = Layer("core", z0, z0 + height, index_core)
+    core = Layer(name="core", zmin=z0, zmax=z0 + height, index=index_core)
     z0 += height
-    pInp = Layer("pInp", z0, z0 + height_top, index_clad)
-    xs_core = XS("sin-strip", [substrate, nInp, core, pInp], index_SiO2)
-    xs_default = XS("default", [substrate], index_SiO2)
+    pInp = Layer(name="pInp", zmin=z0, zmax=z0 + height_top, index=index_clad)
+    xs_core = XS(xs_name="sin-strip", layer_list=[substrate, nInp, core, pInp], background_index=index_SiO2)
+    xs_default = XS(xs_name="default", layer_list=[substrate], background_index=index_SiO2)
     return xs_core, xs_default
+
+
+if __name__ == "__main__":
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    zgrid = np.linspace(-2.0, 5.0, 100)
+    xs_core, xs_default = InP_rib(height=0.35)
+    index_profile = [xs_core.get_index(z) for z in zgrid]
+
+    plt.figure()
+    plt.plot(zgrid, index_profile)
+    plt.xlabel("z (um)")
+    plt.ylabel("Refractive index")
+    plt.show()
