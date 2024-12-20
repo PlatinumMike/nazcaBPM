@@ -19,7 +19,7 @@ from get_polygons_gds import extract_polygons_from_gds
 import os
 import json
 from xs_information import sin_strip
-from input_generator import SettingsBPM, Port, Shape
+from input_generator import SettingsBPM, Port, Shape, Placement
 
 
 def get_taper(
@@ -73,7 +73,7 @@ cross_sections = [xs_core, xs_default]
 
 port_a0 = Port(
     name="a0",
-    placement="left",
+    placement=Placement.left,
     yspan=width1 + 2,
     zspan=height + 2,
     y0=taper_cell.pin["a0"].y,
@@ -83,7 +83,7 @@ port_a0 = Port(
 )
 port_b0 = Port(
     name="b0",
-    placement="right",
+    placement=Placement.right,
     yspan=width2 + 2,
     zspan=height + 2,
     y0=taper_cell.pin["b0"].y,

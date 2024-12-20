@@ -15,7 +15,7 @@ from get_polygons_gds import extract_polygons_from_gds
 import os
 import json
 from xs_information import sin_strip
-from input_generator import SettingsBPM, Port, Shape
+from input_generator import SettingsBPM, Port, Shape, Placement
 
 WG_LAYER = (3, 0)
 
@@ -51,7 +51,7 @@ def get_mmi2x2(
 def get_port_list(
     cell: nd.Cell,
     port_names: list,
-    placement: str = "left",
+    placement: Placement = Placement.left,
     yspan: float = 2.0,
     zspan: float = 4.0,
     z0: float = 0.0,
@@ -113,7 +113,7 @@ cross_sections = [xs_core, xs_default]
 inports = get_port_list(
     cell=mmi_cell,
     port_names=["a0", "a1"],
-    placement="left",
+    placement=Placement.left,
     yspan=2.0,
     zspan=height + 2,
     z0=0.0,
@@ -124,7 +124,7 @@ inports = get_port_list(
 outports = get_port_list(
     cell=mmi_cell,
     port_names=["b0", "b1"],
-    placement="right",
+    placement=Placement.right,
     yspan=2.0,
     zspan=height + 2,
     z0=0.0,

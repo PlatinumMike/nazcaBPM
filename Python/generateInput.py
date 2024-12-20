@@ -5,7 +5,7 @@ Generate input for BPM model.
 import os
 import json
 from xs_information import sin_strip
-from input_generator import SettingsBPM, Port, Shape
+from input_generator import SettingsBPM, Port, Shape, Placement
 
 # user inputs:
 jsonFileName = "./inputs.json"
@@ -65,7 +65,7 @@ cross_sections = [xs_core, xs_default]
 # no point in using a higher resolution than that of the main simulation because the field is interpolated on the BPM simulation grid anyway.
 port_a0 = Port(
     name="a0",
-    placement="left",
+    placement=Placement.left,
     yspan=width1 + 2,
     zspan=height + 2,
     y0=0.0,
@@ -75,7 +75,7 @@ port_a0 = Port(
 )
 port_b0 = Port(
     name="b0",
-    placement="right",
+    placement=Placement.right,
     yspan=width2 + 2,
     zspan=height + 2,
     y0=0.0,

@@ -12,16 +12,22 @@ This way you are less likely to waste CPU time simulating some incorrect setting
 @author: mike
 """
 
-from typing import List, Tuple
+from enum import Enum
+from typing import List, Tuple, Annotated
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, PositiveFloat, PositiveInt
+
+
+class Placement(str, Enum):
+    left = "left"
+    right = "right"
 
 
 class Layer(BaseModel):
     name: str
     zmin: float
     zmax: float
-    index: float
+    index: Annotated[float, Field(ge=1.0)]
 
 
 class XS(BaseModel):
@@ -38,13 +44,13 @@ class XS(BaseModel):
 
 class Port(BaseModel):
     name: str = "a0"
-    placement: str = "left"
-    yspan: float = 4.0
-    zspan: float = 4.0
+    placement: Placement = Placement.left
+    yspan: PositiveFloat = 4.0
+    zspan: PositiveFloat = 4.0
     y0: float = 0.0
     z0: float = 0.0
-    port_resolution_y: int = 30
-    port_resolution_z: int = 30
+    port_resolution_y: PositiveInt = 30
+    port_resolution_z: PositiveInt = 30
 
 
 class Shape(BaseModel):
@@ -54,11 +60,11 @@ class Shape(BaseModel):
 
 
 class SettingsBPM(BaseModel):
-    reference_index: float
-    wl: float
-    resolution_x: int
-    resolution_y: int
-    resolution_z: int
+    reference_index: Annotated[float, Field(ge=1.0)]
+    wl: PositiveFloat
+    resolution_x: PositiveInt
+    resolution_y: PositiveInt
+    resolution_z: PositiveInt
     xmin: float
     xmax: float
     ymin: float
@@ -70,7 +76,7 @@ class SettingsBPM(BaseModel):
     output_ports: List[Port]
     cross_sections: List[XS]
     absolute_path_output: str = "/mnt/workdir"
-    scheme_parameter: float = 0.5
-    pml_strength: float = 5.0
-    pml_thickness: float = 1.0
+    scheme_parameter: Annotated[float, Field(ge=0.0, le=1.0)] = 0.5
+    pml_strength: PositiveFloat = 5.0
+    pml_thickness: PositiveFloat = 1.0
     dry_run: bool = False
