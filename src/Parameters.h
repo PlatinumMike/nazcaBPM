@@ -8,6 +8,7 @@
 #include <filesystem>
 #include "Geometry.h"
 #include "Port.h"
+#include "ModeParameters.h"
 
 struct Parameters {
     double wl; //vacuum wavelength (um)
@@ -34,6 +35,12 @@ struct Parameters {
     double k0; //vacuum wavenumber
     double beta_ref;
 
+    //the model will store the refractive index in slices with x normal, y normal and z normal
+    double index_slice_y; //y value for index in xz place
+    double index_slice_z; //z value for index in xz place
+    double field_slice_y;
+    double field_slice_z;
+
     double scheme_parameter; //value between 0 and 1. For the classical Crank-Nicolson use 0.5.
 
     double pml_strength; //max conductivity inside the PML
@@ -51,6 +58,11 @@ struct Parameters {
     std::vector<Port> output_ports;
 
     std::unordered_map<std::string, XS> xs_map;
+
+    std::vector<double> print_progress_percentage;
+    // Selected percentages to print simulation progress. E.g. [10, 20, 50, 100].
+
+    ModeParams mode_params;
 
     //todo: add method to print all of the loaded values inside of the code, so a user can confirm they are loaded correctly.
 };

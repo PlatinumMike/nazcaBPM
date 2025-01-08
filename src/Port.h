@@ -22,8 +22,6 @@ private:
     const double x0;
     //todo: placement not used currently, remove?
     const std::string placement; //left (x=xmin) or right (x=xmax)
-
-    //todo: add own grid?
 };
 
 

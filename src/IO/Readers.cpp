@@ -42,8 +42,12 @@ Parameters Readers::readJSON(const std::string &inputFileName) {
     inputs.pml_thickness = root.get<double>("pml_thickness");
     inputs.scheme_parameter = root.get<double>("scheme_parameter");
     inputs.dry_run = root.get<bool>("dry_run");
-    auto abs_path = root.get<std::string>("absolute_path_output");
+    const auto abs_path = root.get<std::string>("absolute_path_output");
     inputs.absolute_path_output = abs_path;
+    inputs.index_slice_y = root.get<double>("index_slice_y");
+    inputs.index_slice_z = root.get<double>("index_slice_z");
+    inputs.field_slice_y = root.get<double>("field_slice_y");
+    inputs.field_slice_z = root.get<double>("field_slice_z");
 
 
     inputs.domain_len_x = inputs.xmax - inputs.xmin;
@@ -77,6 +81,14 @@ Parameters Readers::readJSON(const std::string &inputFileName) {
                                    inputs.zmax);
     inputs.output_ports = get_ports(root, "output_ports", inputs.xmin, inputs.xmax, inputs.ymin, inputs.ymax,
                                     inputs.zmin, inputs.zmax);
+
+    auto progress = root.get_child("print_progress_percentage");
+    for (auto &prog: progress) {
+        auto actual_prog = prog.second;
+        inputs.print_progress_percentage.push_back(actual_prog.get_value<double>());
+    }
+
+    inputs.mode_params = get_mode_params(root);
 
     testParameters(inputs);
 
@@ -199,4 +211,28 @@ std::unordered_map<std::string, XS> Readers::get_xs_map(boost::property_tree::pt
         xs_map.insert({xs_name, new_xs});
     }
     return xs_map;
+}
+
+ModeParams Readers::get_mode_params(boost::property_tree::ptree root) {
+    ModeParams mode_params{};
+    const auto params = root.get_child("mode_params");
+    mode_params.absolute_tolerance = params.get<double>("absolute_tolerance");
+    mode_params.eps_y = params.get<double>("eps_y");
+    mode_params.eps_z = params.get<double>("eps_z");
+    mode_params.get_increment_from_bpm = params.get<bool>("get_increment_from_bpm");
+    mode_params.increment_x = params.get<double>("increment_x");
+    mode_params.max_iterations = params.get<int>("max_iterations");
+    mode_params.min_iterations = params.get<int>("min_iterations");
+    mode_params.std_y = params.get<double>("std_y");
+    mode_params.std_z = params.get<double>("std_z");
+
+    const std::unordered_map<std::string, logging_level> table = {
+        {"ERROR", logging_level::ERROR}, {"WARNING", logging_level::WARNING},
+        {"INFO", logging_level::INFO}, {"DEBUG", logging_level::DEBUG}
+    };
+
+    const auto log_str = params.get<std::string>("logging_level");
+    mode_params.level = table.at(log_str);
+
+    return mode_params;
 }

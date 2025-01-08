@@ -8,12 +8,7 @@
 #include <filesystem>
 #include "Port.h"
 #include "Solver.h"
-
-
-// specify how much output to write.
-enum logging_level {
-    ERROR, WARNING, INFO, DEBUG
-};
+#include "ModeParameters.h"
 
 
 class ModeSolver : public Solver {
@@ -22,17 +17,14 @@ public:
                const Port &port,
                double scheme_parameter, double k0, double reference_index,
                const std::filesystem::path &absolute_path_output,
-               logging_level level);
+               const ModeParams &mode_params);
 
     /**
      * This will run the Solver to search for modes.
      * Currently only the fundamental mode is supported.
      * The iterations stop when a certain tolerance is reached, or when the maximum number of iterations is exceeded.
-     * @param increment_x step size in x direction.
-     * @param max_iterations maximum number of iterations allowed before the mode solver gives up.
-     * This is typically the same as for the main BPM simulation, but you can specify a different step size.
      */
-    void run(double increment_x, int max_iterations = 1000);
+    void run();
 
     /**
      * Get the mode overlap
@@ -57,10 +49,8 @@ private:
     Port port;
     double beta;
     double neff;
-    const double abs_tolerance = 1.0e-4;
-    const int min_iterations = 10;
+    const ModeParams mode_params;
     const std::filesystem::path absolute_path_output;
-    const logging_level level;
 
     /**
      * Rescales the field such that the integral of |u|^2 over the yz plane is 1.

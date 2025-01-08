@@ -17,6 +17,7 @@ from get_polygons_gds import extract_polygons_from_gds
 import os
 import json
 from xs_information import sin_strip
+from input_generator import SettingsBPM, ModeParams, Port, Shape, Placement
 
 
 def get_dc(
@@ -43,7 +44,7 @@ def get_dc(
 def get_port_list(
     cell: nd.Cell,
     port_names: list,
-    placement: str = "left",
+    placement: Placement = Placement.left,
     yspan: float = 2.0,
     zspan: float = 4.0,
     z0: float = 0.0,
@@ -52,16 +53,16 @@ def get_port_list(
 ) -> list:
     ports = []
     for port_name in port_names:
-        port = {
-            "name": port_name,
-            "placement": placement,
-            "yspan": yspan,
-            "zspan": zspan,
-            "y0": cell.pin[port_name].y,
-            "z0": z0,
-            "port_resolution_y": port_resolution_y,
-            "port_resolution_z": port_resolution_z,
-        }
+        port = Port(
+            name=port_name,
+            placement=placement,
+            yspan=yspan,
+            zspan=zspan,
+            y0=cell.pin[port_name].y,
+            z0=z0,
+            port_resolution_y=port_resolution_y,
+            port_resolution_z=port_resolution_z,
+        )
         ports.append(port)
     return ports
 
@@ -93,18 +94,18 @@ resz = resy
 
 shapes = []
 for i, polygon in enumerate(polygons):
-    shape = {"cell_name": f"cell{i}", "poly": polygon.tolist(), "xs_name": "sin-strip"}
+    shape = Shape(cell_name=f"cell{i}", poly=polygon.tolist(), xs_name="sin-strip")
     shapes.append(shape)
 
 xs_core, xs_default = sin_strip(height=height)
 
-cross_sections = [xs_core.xs2str(), xs_default.xs2str()]
+cross_sections = [xs_core, xs_default]
 
 
 inports = get_port_list(
     cell=dc_cell,
     port_names=["a0", "a1"],
-    placement="left",
+    placement=Placement.left,
     yspan=2.0,
     zspan=height + 2,
     z0=0.0,
@@ -115,7 +116,7 @@ inports = get_port_list(
 outports = get_port_list(
     cell=dc_cell,
     port_names=["b0", "b1"],
-    placement="right",
+    placement=Placement.right,
     yspan=2.0,
     zspan=height + 2,
     z0=0.0,
@@ -123,33 +124,37 @@ outports = get_port_list(
     port_resolution_z=resz,
 )
 
+mode_params = ModeParams()
 
 # move in the starting and ending boundaries a bit to ensure the structure extends all the way through the xmin, xmax
 buffer = 1.0
 
+settings = SettingsBPM(
+    reference_index=1.65,
+    wl=1.55,
+    resolution_x=resx,
+    resolution_y=resy,
+    resolution_z=resz,
+    xmin=dc_cell.pin["a0"].x + buffer,
+    xmax=dc_cell.pin["b0"].x - buffer,
+    ymin=-12.0,
+    ymax=12.0,
+    zmin=-4.0,
+    zmax=4.0,
+    shapes=shapes,
+    input_ports=inports,
+    output_ports=outports,
+    absolute_path_output=working_dir,
+    cross_sections=cross_sections,
+    pml_strength=5.0,
+    pml_thickness=1.0,
+    scheme_parameter=0.5,
+    dry_run=False,
+    mode_params=mode_params,
+)
+
 # convert to python dict
-dataDict = {
-    "reference_index": 1.65,
-    "wl": 1.55,
-    "resolution_x": resx,
-    "resolution_y": resy,
-    "resolution_z": resz,
-    "xmin": dc_cell.pin["a0"].x + buffer,
-    "xmax": dc_cell.pin["b0"].x - buffer,
-    "ymin": -12.0,
-    "ymax": 12.0,
-    "zmin": -4.0,
-    "zmax": 4.0,
-    "pml_strength": 5.0,
-    "pml_thickness": 1.0,
-    "shapes": shapes,
-    "scheme_parameter": 0.5,
-    "dry_run": False,
-    "input_ports": inports,
-    "output_ports": outports,
-    "absolute_path_output": working_dir,
-    "cross_sections": cross_sections,
-}
+dataDict = settings.model_dump()
 
 # convert to JSON
 jsonDict = json.dumps(dataDict, indent=2, sort_keys=True)

@@ -1,81 +1,242 @@
 {
-  "background_index": 1.5,
-  "domain_len_x": 40.0,
-  "domain_len_y": 6.0,
-  "domain_len_z": 4.0,
+  "absolute_path_output": "/home/user/Documents/Code/BPM/simulations",
+  "cross_sections": [
+    {
+      "background_index": 1.5,
+      "layer_list": [
+        {
+          "index": 2.0,
+          "name": "core",
+          "zmax": 0.175,
+          "zmin": -0.175
+        }
+      ],
+      "xs_name": "sin-strip"
+    },
+    {
+      "background_index": 1.5,
+      "layer_list": [],
+      "xs_name": "default"
+    }
+  ],
   "dry_run": false,
+  "field_slice_y": 0.0,
+  "field_slice_z": 0.0,
+  "index_slice_y": 0.0,
+  "index_slice_z": 0.0,
+  "input_ports": [
+    {
+      "name": "a0",
+      "placement": "left",
+      "port_resolution_y": 30,
+      "port_resolution_z": 30,
+      "y0": 0.0,
+      "yspan": 3.0,
+      "z0": 0.0,
+      "zspan": 2.35
+    }
+  ],
+  "mode_params": {
+    "absolute_tolerance": 0.0001,
+    "eps_y": 0.0,
+    "eps_z": 0.0,
+    "get_increment_from_bpm": true,
+    "increment_x": 0.1,
+    "logging_level": "ERROR",
+    "max_iterations": 1000,
+    "min_iterations": 10,
+    "std_y": 1.0,
+    "std_z": 1.0
+  },
+  "output_ports": [
+    {
+      "name": "b0",
+      "placement": "right",
+      "port_resolution_y": 30,
+      "port_resolution_z": 30,
+      "y0": 0.0,
+      "yspan": 5.0,
+      "z0": 0.0,
+      "zspan": 2.35
+    }
+  ],
   "pml_strength": 5.0,
   "pml_thickness": 1.0,
-  "reference_index": 1.6,
+  "print_progress_percentage": [
+    1.0,
+    10.0,
+    20.0,
+    30.0,
+    40.0,
+    50.0,
+    100.0
+  ],
+  "reference_index": 1.65,
   "resolution_x": 10,
   "resolution_y": 30,
   "resolution_z": 30,
   "scheme_parameter": 0.5,
   "shapes": [
     {
-      "cell_name": "taper",
+      "cell_name": "cell0",
       "poly": [
         [
-          -0.1,
-          -0.5
-        ],
-        [
-          10,
-          -0.5
-        ],
-        [
-          20,
-          -1.5
-        ],
-        [
-          30,
-          -1.5
-        ],
-        [
-          30,
+          15.0,
           1.5
         ],
         [
-          20,
+          20.0,
           1.5
         ],
         [
-          10,
-          0.5
+          20.0,
+          -1.5
         ],
         [
-          -0.1,
-          0.5
+          15.0,
+          -1.5
         ]
       ],
-      "refractive_index": 2.0,
-      "zmax": 0.175,
-      "zmin": -0.175
+      "xs_name": "sin-strip"
     },
     {
-      "cell_name": "strt",
+      "cell_name": "cell1",
       "poly": [
         [
-          30,
-          -1.5
+          5.0,
+          0.5
         ],
         [
-          40.1,
-          -1.5
+          5.348,
+          0.5650000000000001
         ],
         [
-          40.1,
+          5.763,
+          0.635
+        ],
+        [
+          6.255,
+          0.708
+        ],
+        [
+          6.832,
+          0.785
+        ],
+        [
+          7.503,
+          0.866
+        ],
+        [
+          8.278,
+          0.9520000000000001
+        ],
+        [
+          9.168000000000001,
+          1.041
+        ],
+        [
+          10.182,
+          1.1340000000000001
+        ],
+        [
+          11.333,
+          1.231
+        ],
+        [
+          12.631,
+          1.333
+        ],
+        [
+          14.09,
+          1.438
+        ],
+        [
+          15.0,
           1.5
         ],
         [
-          30,
-          1.5
+          15.0,
+          -1.5
+        ],
+        [
+          14.09,
+          -1.438
+        ],
+        [
+          12.631,
+          -1.333
+        ],
+        [
+          11.333,
+          -1.231
+        ],
+        [
+          10.182,
+          -1.1340000000000001
+        ],
+        [
+          9.168000000000001,
+          -1.041
+        ],
+        [
+          8.278,
+          -0.9520000000000001
+        ],
+        [
+          7.503,
+          -0.866
+        ],
+        [
+          6.832,
+          -0.785
+        ],
+        [
+          6.255,
+          -0.708
+        ],
+        [
+          5.763,
+          -0.635
+        ],
+        [
+          5.348,
+          -0.5650000000000001
+        ],
+        [
+          5.0,
+          -0.5
         ]
       ],
-      "refractive_index": 2.0,
-      "zmax": 0.175,
-      "zmin": -0.175
+      "xs_name": "sin-strip"
+    },
+    {
+      "cell_name": "cell2",
+      "poly": [
+        [
+          0.0,
+          0.5
+        ],
+        [
+          5.0,
+          0.5
+        ],
+        [
+          5.0,
+          -0.5
+        ],
+        [
+          0.0,
+          -0.5
+        ]
+      ],
+      "xs_name": "sin-strip"
     }
   ],
-  "wl": 1.5
+  "wl": 1.55,
+  "xmax": 19.0,
+  "xmin": 1.0,
+  "ymax": 8.0,
+  "ymin": -8.0,
+  "zmax": 4.0,
+  "zmin": -4.0
 }
