@@ -53,7 +53,8 @@ add_executable(${EXENAME} src/main.cpp
         src/XS.cpp
         src/XS.h
         src/Shape.cpp
-        src/Shape.h)
+        src/Shape.h
+        src/ModeParameters.h)
 
 target_link_libraries(${EXENAME} PRIVATE HDF5::HDF5)
 target_link_libraries(${EXENAME} PRIVATE Boost::boost)
@@ -73,6 +74,7 @@ if (ENABLE_TEST)
             src/XS.h
             src/Shape.cpp
             src/Shape.h
+            src/ModeParameters.h
     )
 endif ()
 

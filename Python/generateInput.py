@@ -5,7 +5,7 @@ Generate input for BPM model.
 import os
 import json
 from xs_information import sin_strip
-from input_generator import SettingsBPM, Port, Shape, Placement
+from input_generator import SettingsBPM, ModeParams, Port, Shape, Placement
 
 # user inputs:
 jsonFileName = "./inputs.json"
@@ -87,6 +87,8 @@ port_b0 = Port(
 inports = [port_a0]
 outports = [port_b0]
 
+mode_params = ModeParams()
+
 
 # convert to python dict
 # If it crashes with a ValidationError here this means your input is not matching the expected type or data range.
@@ -111,6 +113,7 @@ settings = SettingsBPM(
     pml_thickness=1.0,
     scheme_parameter=0.5,
     dry_run=False,
+    mode_params=mode_params,
 )
 
 dataDict = settings.model_dump()

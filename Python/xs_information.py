@@ -7,7 +7,6 @@ Cross section class
 
 @author: mike
 """
-from typing import List
 from input_generator import Layer, XS
 
 

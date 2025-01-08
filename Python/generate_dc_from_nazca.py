@@ -17,7 +17,7 @@ from get_polygons_gds import extract_polygons_from_gds
 import os
 import json
 from xs_information import sin_strip
-from input_generator import SettingsBPM, Port, Shape, Placement
+from input_generator import SettingsBPM, ModeParams, Port, Shape, Placement
 
 
 def get_dc(
@@ -124,6 +124,7 @@ outports = get_port_list(
     port_resolution_z=resz,
 )
 
+mode_params = ModeParams()
 
 # move in the starting and ending boundaries a bit to ensure the structure extends all the way through the xmin, xmax
 buffer = 1.0
@@ -149,6 +150,7 @@ settings = SettingsBPM(
     pml_thickness=1.0,
     scheme_parameter=0.5,
     dry_run=False,
+    mode_params=mode_params,
 )
 
 # convert to python dict

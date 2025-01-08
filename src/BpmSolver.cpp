@@ -15,7 +15,8 @@ BpmSolver::BpmSolver(const Geometry &geometry, const PML &pmly, const PML &pmlz,
                                                                           absolute_path_output(absolute_path_output) {
 }
 
-void BpmSolver::run(const multi_array<std::complex<double>, 2> &initial_field) {
+void BpmSolver::run(const multi_array<std::complex<double>, 2> &initial_field,
+                    const std::vector<double> &print_progress, const double field_slice_y, const double field_slice_z) {
     auto xgrid = grid3d.get_xgrid();
     auto ygrid = grid3d.get_ygrid();
     auto zgrid = grid3d.get_zgrid();
@@ -35,15 +36,15 @@ void BpmSolver::run(const multi_array<std::complex<double>, 2> &initial_field) {
     output_path.append("field_yz_start.h5");
     start_field.save_data(output_path.string());
 
-    //slice at z=0
+    //slice at z=field_slice_z
     FieldMonitor field_slice_xy(grid3d.get_xmin(), grid3d.get_xmax(), grid3d.get_ymin(), grid3d.get_ymax(), 'z',
-                                0.0,
+                                field_slice_z,
                                 numx, numy);
     field_slice_xy.populate(ygrid, zgrid, internal_field, 0);
 
-    //slice at y=0
+    //slice at y=field_slice_y
     FieldMonitor field_slice_xz(grid3d.get_xmin(), grid3d.get_xmax(), grid3d.get_zmin(), grid3d.get_zmax(), 'y',
-                                0.0,
+                                field_slice_y,
                                 numx, numz);
     field_slice_xz.populate(ygrid, zgrid, internal_field, 0);
 
@@ -51,7 +52,7 @@ void BpmSolver::run(const multi_array<std::complex<double>, 2> &initial_field) {
     const std::complex<double> propagation_factor = grid3d.get_dx() / (2.0 * k0 * reference_index)
                                                     * std::complex<double>{0.0, 1.0};
 
-    ProgressBar progress_bar(numx);
+    ProgressBar progress_bar(numx, print_progress);
     for (int x_step = 1; x_step < numx; x_step++) {
         const double current_x = xgrid[x_step - 1];
         internal_field = do_step_cn(internal_field, current_x, grid3d.get_dx(), propagation_factor);

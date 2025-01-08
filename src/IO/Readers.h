@@ -28,7 +28,8 @@ private:
     static std::vector<Shape> get_shapes(boost::property_tree::ptree root);
 
     static std::unordered_map<std::string, XS> get_xs_map(boost::property_tree::ptree root);
-};
 
+    static ModeParams get_mode_params(boost::property_tree::ptree root);
+};
 
 #endif //READERS_H

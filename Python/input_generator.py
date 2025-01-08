@@ -18,6 +18,13 @@ from typing import List, Tuple, Annotated
 from pydantic import BaseModel, Field, PositiveFloat, PositiveInt
 
 
+class LoggingLevel(str, Enum):
+    error = "ERROR"
+    warning = "WARNING"
+    info = "INFO"
+    debug = "DEBUG"
+
+
 class Placement(str, Enum):
     left = "left"
     right = "right"
@@ -59,6 +66,19 @@ class Shape(BaseModel):
     xs_name: str = "default"
 
 
+class ModeParams(BaseModel):
+    logging_level: LoggingLevel = LoggingLevel.error
+    eps_y: float = 0.0
+    eps_z: float = 0.0
+    std_y: PositiveFloat = 1.0
+    std_z: PositiveFloat = 1.0
+    max_iterations: PositiveInt = 1000
+    min_iterations: PositiveInt = 10
+    absolute_tolerance: PositiveFloat = 1.0e-4
+    increment_x: PositiveFloat = 0.1
+    get_increment_from_bpm: bool = True
+
+
 class SettingsBPM(BaseModel):
     reference_index: Annotated[float, Field(ge=1.0)]
     wl: PositiveFloat
@@ -80,3 +100,17 @@ class SettingsBPM(BaseModel):
     pml_strength: PositiveFloat = 5.0
     pml_thickness: PositiveFloat = 1.0
     dry_run: bool = False
+    print_progress_percentage: List[Annotated[float, Field(gt=0.0, lt=100.0)]] = [
+        1.0,
+        10.0,
+        20.0,
+        30.0,
+        40.0,
+        50.0,
+        100.0,
+    ]
+    index_slice_y: float = 0.0
+    index_slice_z: float = 0.0
+    field_slice_y: float = 0.0
+    field_slice_z: float = 0.0
+    mode_params: ModeParams

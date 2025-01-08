@@ -13,16 +13,16 @@ using boost::extents;
 ModeSolver::ModeSolver(const Geometry &geometry, const PML &pmly, const PML &pmlz,
                        const Port &port, const double scheme_parameter, const double k0,
                        const double reference_index, const std::filesystem::path &absolute_path_output,
-                       const logging_level level): Solver(
-                                                       geometry, pmly, pmlz, port,
-                                                       scheme_parameter, k0, reference_index),
-                                                   port(port), absolute_path_output(absolute_path_output),
-                                                   level(level) {
+                       const ModeParams &mode_params): Solver(
+                                                           geometry, pmly, pmlz, port,
+                                                           scheme_parameter, k0, reference_index),
+                                                       port(port), mode_params(mode_params),
+                                                       absolute_path_output(absolute_path_output) {
     beta = 0.0;
     neff = 0.0;
 }
 
-void ModeSolver::run(const double increment_x, const int max_iterations) {
+void ModeSolver::run() {
     auto ygrid = gridPtr->get_ygrid();
     auto zgrid = gridPtr->get_zgrid();
 
@@ -30,18 +30,15 @@ void ModeSolver::run(const double increment_x, const int max_iterations) {
 
     std::filesystem::path output_path = absolute_path_output;
 
-    // slight offset so it excites also odd modes, this can be used to find the higher order modes
-    // disabled for now, we care only about the fundamental mode for now.
-    constexpr double eps_y = 0.0;
-    constexpr double eps_z = 0.0;
     //define field in current slice to be "field". Since it is a scalar BPM there is no polarization.
-    internal_field = get_initial_profile(ygrid, zgrid, port.get_y0() + eps_y, port.get_z0() + eps_z, 1.0, 1.0);
+    internal_field = get_initial_profile(ygrid, zgrid, port.get_y0() + mode_params.eps_y,
+                                         port.get_z0() + mode_params.eps_z, mode_params.std_y, mode_params.std_z);
 
     // write debug data
     FieldMonitor monitor(gridPtr->get_ymin(), gridPtr->get_ymax(), gridPtr->get_zmin(), gridPtr->get_zmax(), 'x',
                          0.0,
                          static_cast<int>(gridPtr->get_numy()), static_cast<int>(gridPtr->get_numz()));
-    if (level > WARNING) {
+    if (mode_params.level > WARNING) {
         monitor.populate(ygrid, zgrid, internal_field, 0);
         output_path.append(std::format("monitor_{}_yz_0.h5", port.get_name()));
         monitor.save_data(output_path.string());
@@ -53,15 +50,15 @@ void ModeSolver::run(const double increment_x, const int max_iterations) {
     double iterations_used = 0;
 
     //For the Imaginary distance method we propagate along ix instead of x.
-    const std::complex<double> propagation_factor = increment_x / (2.0 * k0 * reference_index)
+    const std::complex<double> propagation_factor = mode_params.increment_x / (2.0 * k0 * reference_index)
                                                     * std::complex<double>{-1.0, 0.0};
 
-    for (int x_step = 0; x_step < max_iterations; x_step++) {
+    for (int x_step = 0; x_step < mode_params.max_iterations; x_step++) {
         // pass x=x0, and dx=0 because we do not need to advance in x. That is only used to get the index, and we want to mimic an infinitely long straight waveguide.
         auto new_field = do_step_cn(internal_field, port.get_x0(), 0.0, propagation_factor);
-        beta = compute_beta(internal_field, new_field, increment_x);
+        beta = compute_beta(internal_field, new_field, mode_params.increment_x);
         internal_field = new_field;
-        if (x_step + 1 >= min_iterations && std::abs(beta - beta_old) < abs_tolerance) {
+        if (x_step + 1 >= mode_params.min_iterations && std::abs(beta - beta_old) < mode_params.absolute_tolerance) {
             //converged, so exiting the loop
             mode_found = true;
             iterations_used = x_step + 1;
@@ -73,7 +70,7 @@ void ModeSolver::run(const double increment_x, const int max_iterations) {
         normalize_field(internal_field);
 
         //save debug data to disk
-        if (level > WARNING) {
+        if (mode_params.level > WARNING) {
             monitor.populate(ygrid, zgrid, internal_field, 0);
             output_path.replace_filename(std::format("monitor_{}_yz_{}.h5", port.get_name(), x_step + 1));
             monitor.save_data(output_path.string());

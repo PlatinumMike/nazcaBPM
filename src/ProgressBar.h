@@ -5,11 +5,16 @@
 #ifndef PROGRESSBAR_H
 #define PROGRESSBAR_H
 #include <chrono>
+#include <vector>
 
+struct Checkpoint {
+    int step;
+    double percentage;
+};
 
 class ProgressBar {
 public:
-    explicit ProgressBar(int max_steps);
+    ProgressBar(int max_steps, std::vector<double> percentages);
 
     /**
      * Print rough indication of simulation progress
@@ -22,9 +27,7 @@ public:
 private:
     std::chrono::steady_clock::time_point begin;
     const int max_steps;
-    const int checkpoint_1percent;
-    const int checkpoint_10percent;
-    const int checkpoint_50percent;
+    std::vector<Checkpoint> checkpoints;
 
     void print_progress(double percentage) const;
 };

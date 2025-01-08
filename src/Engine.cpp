@@ -63,13 +63,15 @@ void Engine::run() const {
     index_path.replace_filename("index_yz_end.h5");
     monitor_x1.save_data(index_path);
 
-    IndexMonitor monitor_y(grid.get_xmin(), grid.get_xmax(), grid.get_zmin(), grid.get_zmax(), 'y', 0.0,
+    IndexMonitor monitor_y(grid.get_xmin(), grid.get_xmax(), grid.get_zmin(), grid.get_zmax(), 'y',
+                           inputs.index_slice_y,
                            inputs.numx, inputs.numz);
     monitor_y.populate(geometry);
     index_path.replace_filename("index_xz.h5");
     monitor_y.save_data(index_path);
 
-    IndexMonitor monitor_z(grid.get_xmin(), grid.get_xmax(), grid.get_ymin(), grid.get_ymax(), 'z', 0.0,
+    IndexMonitor monitor_z(grid.get_xmin(), grid.get_xmax(), grid.get_ymin(), grid.get_ymax(), 'z',
+                           inputs.index_slice_z,
                            inputs.numx, inputs.numy);
     monitor_z.populate(geometry);
     index_path.replace_filename("index_xy.h5");
@@ -86,7 +88,8 @@ void Engine::run() const {
     //todo: mode solving is not always stable.
     std::vector<ModeSolver> input_solvers;
     std::vector<ModeSolver> output_solvers;
-    double increment_x = grid.get_dx();
+    ModeParams mode_params = inputs.mode_params;
+    if (mode_params.get_increment_from_bpm) { mode_params.increment_x = grid.get_dx(); }
     // input ports
     for (const auto &input_port: inputs.input_ports) {
         // Im-Dis method not stable in combination with PML. So just for the mode solver we will use metal walls.
@@ -97,8 +100,8 @@ void Engine::run() const {
 
 
         ModeSolver mode_solver(geometry, pmly_input, pmlz_input, input_port, inputs.scheme_parameter, inputs.k0,
-                               inputs.reference_index, inputs.absolute_path_output, ERROR);
-        mode_solver.run(increment_x);
+                               inputs.reference_index, inputs.absolute_path_output, mode_params);
+        mode_solver.run();
 
         input_solvers.push_back(mode_solver);
     }
@@ -111,8 +114,8 @@ void Engine::run() const {
 
 
         ModeSolver mode_solver(geometry, pmly_output, pmlz_output, output_port, inputs.scheme_parameter, inputs.k0,
-                               inputs.reference_index, inputs.absolute_path_output, ERROR);
-        mode_solver.run(increment_x);
+                               inputs.reference_index, inputs.absolute_path_output, mode_params);
+        mode_solver.run();
 
         output_solvers.push_back(mode_solver);
     }
@@ -127,7 +130,7 @@ void Engine::run() const {
     //todo: for now this only works for one input port at a time. If we have multiple input ports only the first is used.
     // update such that you can use multiple at the same time.
     auto intial_field = input_solvers.front().interpolate_field(grid.get_ygrid(), grid.get_zgrid());
-    bpm_solver.run(intial_field);
+    bpm_solver.run(intial_field, inputs.print_progress_percentage, inputs.field_slice_y, inputs.field_slice_z);
     //todo: call function solver.save_data() or something to save/extract data after the solve is completed.
 
     auto output_port = inputs.output_ports.front();
