@@ -20,6 +20,10 @@
     }
   ],
   "dry_run": false,
+  "field_slice_y": 0.0,
+  "field_slice_z": 0.0,
+  "index_slice_y": 0.0,
+  "index_slice_z": 0.0,
   "input_ports": [
     {
       "name": "a0",
@@ -42,6 +46,18 @@
       "zspan": 2.35
     }
   ],
+  "mode_params": {
+    "absolute_tolerance": 0.0001,
+    "eps_y": 0.0,
+    "eps_z": 0.0,
+    "get_increment_from_bpm": true,
+    "increment_x": 0.1,
+    "logging_level": "ERROR",
+    "max_iterations": 1000,
+    "min_iterations": 10,
+    "std_y": 1.0,
+    "std_z": 1.0
+  },
   "output_ports": [
     {
       "name": "b0",
@@ -66,6 +82,15 @@
   ],
   "pml_strength": 5.0,
   "pml_thickness": 1.0,
+  "print_progress_percentage": [
+    1.0,
+    10.0,
+    20.0,
+    30.0,
+    40.0,
+    50.0,
+    100.0
+  ],
   "reference_index": 1.65,
   "resolution_x": 10,
   "resolution_y": 30,
